@@ -1,5 +1,8 @@
 #!/bin/bash -f
 
+
+wwwdir="/afs/cern.ch/cms/tracker/sistrvalidation/WWW/CalibrationValidation/HitEfficiency"
+
 #CreateIndex ()
 #{
 #    COUNTER=0
@@ -63,7 +66,8 @@ StoreOutputs ()
 
   analysistype=$1
   
-  wwwdir="/afs/cern.ch/cms/tracker/sistrvalidation/WWW/CalibrationValidation/HitEfficiency"
+  #wwwdir="/afs/cern.ch/cms/tracker/sistrvalidation/WWW/CalibrationValidation/HitEfficiency"
+  wwwdir="/afs/cern.ch/user/j/jlagram/www/HitEfficiency_11_3_2"
 
   #Now publish all of the relevant files
   #Create the relevant directories on a per run basis
@@ -122,6 +126,72 @@ StoreOutputs ()
   fi
   
 }
+
+
+# Storing outputs from predictions computatoins into www directory
+StorePredictionsOutputs ()
+{
+
+  dirname="predictions"
+
+  #Now publish all of the relevant files
+  #Create the relevant directories on a per run basis
+  echo "Creating directories ..."
+
+  mkdir -p "$wwwdir/$ERA/run_$runnumber"
+  echo "Creating run_$runnumber/$dirname"
+  mkdir "$wwwdir/$ERA/run_$runnumber/$dirname"
+
+  echo "Moving output to the proper directory ..."
+
+  #Move files
+  mv "predictions_$runnumber.log" "$wwwdir/$ERA/run_$runnumber/$dirname"
+  mv "fill.json" "$wwwdir/$ERA/run_$runnumber/$dirname"
+  mv "SiStripHitEffPredictions_run$runnumber.root" "$wwwdir/$ERA/run_$runnumber/$dirname"
+  mv "HitEffPredictions_run$runnumber.png" "$wwwdir/$ERA/run_$runnumber/$dirname"
+}
+
+
+# Create a page with the most important plots
+MakeShifterSummary ()
+{
+
+  echo "Creating summary page"
+  LASTUPDATE=`date`
+
+  cat /afs/cern.ch/cms/tracker/sistrvalidation/WWW/template_index_header.html | sed -e "s@insertPageName@Validation Plots --- Hit Efficiency Study --- Tracker Maps@g" > index_new.html
+
+  cat >> index_new.html  << EOF
+<TR> <TD align=center> <a href="../standard/Plots/SiStripHitEffTKMapBad.png"><img src="../standard/Plots/SiStripHitEffTKMapBad.png"hspace=5 vspace=5 border=0 style="width: 90%" ALT="SiStripHitEffTKMapBad.png"></a> 
+  <br> Inefficient modules masked in the other plots</TD>
+EOF
+
+  cat >> index_new.html  << EOF
+  <TD align=center> <a href="../withMasking/Plots/SiStripHitEffTKMap.png"><img src="../withMasking/Plots/SiStripHitEffTKMap.png"hspace=5 vspace=5 border=0 style="width: 90%" ALT="SiStripHitEffTKMap.png"></a> 
+  <br> Remaining inefficient modules </TD> </TR> 
+EOF
+            
+  cat >> index_new.html  << EOF
+<TR> <TD align=center> <a href="../withMasking/Plots/SiStripHitEffTKMapEff.png"><img src="../withMasking/Plots/SiStripHitEffTKMapEff.png"hspace=5 vspace=5 border=0 style="width: 90%" ALT="SiStripHitEffTKMapEff.png"></a> 
+  <br> Efficiency map </TD>
+EOF
+            
+  cat >> index_new.html  << EOF
+  <TD align=center> <a href="../withMasking/Plots/Summary.png"><img src="../withMasking/Plots/Summary.png"hspace=5 vspace=5 border=0 style="width: 90%" ALT="Summary.png"></a> 
+  <br> Efficiency per layer </TD> </TR> 
+EOF
+
+  cat >> index_new.html  << EOF
+<TR> <TD align=center></TD> <TD align=center> <a href="../predictions/HitEffPredictions_run$runnumber.png"><img src="../predictions/HitEffPredictions_run$runnumber.png"hspace=5 vspace=5 border=0 style="width: 90%" ALT="HitEffPredictions_run$runnumber.png"></a> 
+  <br> Comparison with predictions </TD> </TR> 
+EOF
+
+  cat /afs/cern.ch/cms/tracker/sistrvalidation/WWW/template_index_foot.html | sed -e "s@insertDate@$LASTUPDATE@g" >> index_new.html
+
+  mkdir "$wwwdir/$ERA/run_$runnumber/shifterSummary"
+  mv -f index_new.html "$wwwdir/$ERA/run_$runnumber/shifterSummary/index.html"
+}
+
 
 
 ##############################################
@@ -266,7 +336,7 @@ echo "--------------------------"
 ######################
 # Lauching production
 
-#cp dbfile_31X_IdealConditions.db dbfile.db
+### Running first pass for identifying inefficient modules
 
 cp SiStripHitEff_template.py "SiStripHitEff_run$runnumber.py"
 sed -i "s/newrun/$runnumber/g" "SiStripHitEff_run$runnumber.py"
@@ -286,7 +356,8 @@ StoreOutputs standard
 
 
 
-# Running the analysis a second time in masking some inefficient modules
+### Running the analysis a second time in masking some inefficient modules
+
 mv BadModules.log BadModules_input.txt
 
 cp SiStripHitEff_template.py "SiStripHitEff_run$runnumber.py"
@@ -304,7 +375,6 @@ cat run_$runnumber.log | awk 'BEGIN{doprint=0}{if(match($0,"New IOV")!=0) doprin
 cat run_$runnumber.log | awk 'BEGIN{doprint=0}{if(match($0,"occupancy")!=0) doprint=1;if(match($0,"efficiency")!=0) doprint=1; if(match($0,"%MSG")!=0) {doprint=0;} if(match($0,"tempfilename")!=0) {doprint=0;} if(match($0,"New IOV")!=0) {doprint=0;} if(match($0,"generation")!=0) {doprint=0;} if(doprint==1) print $0}' > EfficiencyResults_$runnumber.txt
 
 mv run_$runnumber.log run_${runnumber}_withMasking.log
-cp  
 
 StoreOutputs withMasking
 
@@ -312,7 +382,15 @@ rm BadModules.log
 #rm -f SiStripHitEffHistos_run${runnumber}_*.root
 
 
-# produce and store trend plots
+
+### Comparison with Predictions
+
+echo "Computing predicted efficiencies ..."
+python3 CompareWithPredictions.py $runnumber >& "predictions_$runnumber.log"
+StorePredictionsOutputs 
+MakeShifterSummary
+
+### produce and store trend plots
 
 ./TrendPlots.sh $ERA
 
