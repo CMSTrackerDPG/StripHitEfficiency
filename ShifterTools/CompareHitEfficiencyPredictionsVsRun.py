@@ -21,6 +21,8 @@ def fillNumberFromRun(run):
         if x.split(' ')[0]==run:
             fill=x.split(' ')[1]
             return int(fill)
+    if fill==-1:
+        print('Warning: no fill found for run', run)
     return int(fill)
 
 def get_layer_name(layer):
@@ -121,7 +123,7 @@ def add_points(graph, directory, subdir, layer, filter=False):
         layer_name = get_layer_name(layer)
         pred.read_deadtime("inputs/Ndeadtime.txt",layer_name)
 
-        expected = pred.compute_avg_eff_layer(layer_name)
+        expected = pred.compute_avg_eff_layer_factorized(layer_name)
         error = np.sqrt(pred.compute_error_avg_eff_layer(layer_name))
 
         ##########
@@ -129,7 +131,10 @@ def add_points(graph, directory, subdir, layer, filter=False):
 
         # compute ratio and fill graph
 
-        ratio = eff/expected
+        if expected!=0: 
+          ratio = eff/expected
+        else:
+          ratio = 0
         if filter and (ratio>0.998 and ratio<1.002): ratio=0
         graph.SetPoint(ipt, ipt+1, ratio)
         graph.SetPointError(ipt, 0, 0, (eff-low)/expected, (up-eff)/expected)
@@ -227,7 +232,7 @@ subdir=str(sys.argv[2])
 
 graphs=[]
 
-for layer in range(1,11):#35
+for layer in range(1,2):#35
 
   print('producing trend plot for layer '+str(layer))
 

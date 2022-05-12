@@ -17,12 +17,23 @@ class EfficiencyCalculator:
     def __init__(self):
         self.__hipprod = ROOT.TH1F()
         self.__offset = ROOT.TH1F()
+        self.__pileup = 0.
+        self.__pileup_histo = ROOT.TH1F()
+        self.__layer = ''
+        self.__deadtime = 0.
 
     def get_pileup(self):
         return self.__pileup
     
     def set_pileup(self,pileup):
         self.__pileup = pileup
+
+    def get_pileup_histo(self):
+        return self.__pileup
+
+    def set_pileup_histo(self,pileup_histo):
+        #--- if the PU histo is set, it is used instead of the mean value
+        self.__pileup_histo = pileup_histo
 
     def get_fillscheme(self):
         return self.__fillscheme
@@ -33,6 +44,8 @@ class EfficiencyCalculator:
         with open(fillschemepath) as json_input:
             bx_list = json.load(json_input)
         self.__fillscheme = bx_list
+        if len(bx_list)==0:
+            print('Warning: empty fill scheme')
 
     def read_inputs(self,hipprobpath,offsetpath):
         #--- opening HIP probability per pile-up 
@@ -71,15 +84,16 @@ class EfficiencyCalculator:
         return nDeadTime,error
 
     def reweight_scheme(self,layer):
-        #--- correction to describe filling scheme
-        pu=self.__pileup
+        #--- correction to describe filling scheme of the fill used to compute the dead-time values
+        factor=1.
         with open('inputs/factReweight.txt','r') as f:
             rs=f.readlines()
             for r in rs:
                 c=r.split()
                 if c[0]+' '+c[1] == layer:
-                    pu/=float(c[2])
-        return pu
+                    factor/=float(c[2])
+        return factor
+
 
     def compute_eff_layer(self,train,layer,useOffsetLowPU=True):
         # hit efficiency computed with dead time model - for a given scheme structure(train),low pile-up offset(TH1), HIP probabilities(TH1),average pile-up,layer
@@ -87,7 +101,8 @@ class EfficiencyCalculator:
         Offset_value = 0
         HIPprob_value = 1
         h_hipprod = self.__hipprob.Clone()
-        pu_rew=self.reweight_scheme(layer)
+        pu = self.__pileup
+        pu_rew=pu*self.reweight_scheme(layer)
         for x in range(0,(self.__hipprob).GetNbinsX()+1):
             if self.__layer == self.__hipprob.GetXaxis().GetBinLabel(x):
                 HIPprob_value = self.__hipprob.GetBinContent(x)*1e-5 #load HIP probability for the given layer
@@ -101,7 +116,7 @@ class EfficiencyCalculator:
         efficiency = Offset_value
         index = 0
         ineff = HIPprob_value * pu_rew
-        #compute the hit efficiency with the 'historical' function  
+        #compute the hit efficiency with the 'historical' function
         for bx in range(train[0],train[1]+1):
             if index>0 and float(index) < self.__deadtime:
                 efficiency=Offset_value-ineff*index
@@ -109,6 +124,8 @@ class EfficiencyCalculator:
                 efficiency=Offset_value-ineff*self.__deadtime
             eff_list[bx]=efficiency
             index+=1
+        #print(eff_list)
+
         return eff_list
 
     def compute_avg_eff_layer(self,layer):
@@ -122,7 +139,78 @@ class EfficiencyCalculator:
         self.__avgefflayer = value/idx
         return value/idx
 
-    def compute_error_avg_eff_layer(self,layer):
+
+    def compute_fill_factor(self):
+        if len(self.__fillscheme)==0:
+            print('Error: empty fill scheme')
+            return 0
+        if self.__deadtime == 0:
+            print('Error: deadtime not set for layer', layer)
+            return 0
+ 
+        # Average the impact of the 'historical' function on each bx of the orbit
+        # Assumption is made that the recovery is total between 2 trains and that the space between bunches in a train is 25ns
+        idx=0
+        value=0.0
+        efficiency = 0.
+
+        for train in self.__fillscheme:
+            index = 0
+            for bx in range(train[0],train[1]+1):
+                if float(index) < self.__deadtime:
+                    efficiency=index
+                if float(index) >= self.__deadtime:
+                    efficiency=self.__deadtime
+                value+=efficiency
+                index+=1
+                idx+=1
+        if idx==0:
+            print('Warning: no bx found in fill scheme')
+            return 0
+
+        self.__avgefflayer = value/idx
+        return value/idx
+
+
+    def compute_avg_eff_layer_factorized(self,layer,useOffsetLowPU=True):
+        # hit efficiency computed with dead time model - for a given scheme structure(train),low pile-up offset(TH1), HIP probabilities(TH1),average pile-up,layer
+        #print('computing average efficiency over orbit for layer: ',layer)
+
+        if self.__layer != layer:
+            print('Error: deadtime not set for layer', layer)
+            return 0.
+        if (self.__hipprob).GetNbinsX() == 0:
+            print('Error: HIP probabilities not set')
+            return 0.
+        if (self.__offset).GetNbinsX() == 0:
+            print('Error: offset values not set')
+            return 0.
+
+        # Get HIP proba and offset value for the given layer
+        Offset_value = 0
+        HIPprob_value = 1
+        for x in range(0,(self.__hipprob).GetNbinsX()+1):
+            if self.__layer == self.__hipprob.GetXaxis().GetBinLabel(x):
+                HIPprob_value = self.__hipprob.GetBinContent(x)*1e-5 #load HIP probability for the given layer
+            if self.__layer == self.__offset.GetXaxis().GetBinLabel(x):
+                Offset_value = self.__offset.GetBinContent(x) #load low pile-up offset for the given layer
+                self.__error_offset_value = self.__offset.GetBinError(x) #save low-pu offset error for the given layer
+        if(useOffsetLowPU==False):
+            Offset_value = 1
+        self.__offset_value = Offset_value
+
+        # Compute inefficiency factor of the fill scheme
+        fill_factor = self.compute_fill_factor()
+
+        # Compute layer efficiency
+        pu = self.__pileup
+        rew_fact = self.reweight_scheme(layer)
+        print(Offset_value, HIPprob_value, pu, rew_fact, fill_factor)
+        self.__avgefflayer = Offset_value - HIPprob_value * pu * rew_fact * fill_factor
+
+        return self.__avgefflayer
+
+    def compute_error_avg_eff_layer(self,layer): # TO BE CORRECTED
         if self.__offset_value > 0 and self.__deadtime > 0:
             err_avg_eff = ( pow(self.__error_offset_value/self.__offset_value,2) + pow(self.__error/self.__deadtime,2) ) * pow(1-self.__avgefflayer,2)
         else :
