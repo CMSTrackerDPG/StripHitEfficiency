@@ -120,6 +120,10 @@ if not os.path.isfile(fillJson_str):
 
 pred = EfficiencyCalculator()
 pred.set_pileup(pu)
+# get PU distribution
+pu_histo = fdir.Get("layerfound_vsPU_layer_"+str(layer))
+if pu_histo:
+	pred.set_pileup_histo(pu_histo)
 pred.set_fillscheme(fillJson_str)
 pred.read_inputs("inputs/HIPProbPerPU.root","inputs/LowPUOffset.root")
 

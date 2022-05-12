@@ -203,10 +203,27 @@ class EfficiencyCalculator:
         fill_factor = self.compute_fill_factor()
 
         # Compute layer efficiency
-        pu = self.__pileup
+        # use mean PU if PU distribution is not set
         rew_fact = self.reweight_scheme(layer)
-        print(Offset_value, HIPprob_value, pu, rew_fact, fill_factor)
-        self.__avgefflayer = Offset_value - HIPprob_value * pu * rew_fact * fill_factor
+        avg_eff = 0.
+        total_weight = 0.
+        if self.__pileup_histo.GetNbinsX() < 2:
+            pu = self.__pileup
+            print(Offset_value, HIPprob_value, pu, rew_fact, fill_factor)
+            self.__avgefflayer = Offset_value - HIPprob_value * pu * rew_fact * fill_factor
+        else:
+            for ibin in range(1, self.__pileup_histo.GetNbinsX()+1):
+                if self.__pileup_histo.GetBinContent(ibin) >= 1:
+                    pu = self.__pileup_histo.GetBinCenter(ibin)
+                    weight = self.__pileup_histo.GetBinContent(ibin)
+                    #print(ibin, pu, weight)
+                    avg_eff += weight * (Offset_value - HIPprob_value * pu * rew_fact * fill_factor)
+                    total_weight += weight
+            if total_weight!=0 :
+                avg_eff /= total_weight
+            else :
+                avg_eff = 0
+            self.__avgefflayer = avg_eff
 
         return self.__avgefflayer
 

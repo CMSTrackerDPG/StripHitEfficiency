@@ -111,7 +111,11 @@ def add_points(graph, directory, subdir, layer, filter=False):
         # compute expected efficiency
 
         pred = EfficiencyCalculator()
-        pred.set_pileup(pu)
+        # get PU
+        #pred.set_pileup(pu)
+        pu_histo = fdir.Get("layertotal_vsPU_layer_"+str(layer)) # one entry per expected hits vs PU
+        if pu_histo:
+            pred.set_pileup_histo(pu_histo)
         pred.set_fillscheme(fillJson_str)
         pred.read_inputs("inputs/HIPProbPerPU.root","inputs/LowPUOffset.root")
         
@@ -232,7 +236,7 @@ subdir=str(sys.argv[2])
 
 graphs=[]
 
-for layer in range(1,2):#35
+for layer in range(1,10):#35
 
   print('producing trend plot for layer '+str(layer))
 
