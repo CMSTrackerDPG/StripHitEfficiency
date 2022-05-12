@@ -66,9 +66,6 @@ StoreOutputs ()
 
   analysistype=$1
   
-  #wwwdir="/afs/cern.ch/cms/tracker/sistrvalidation/WWW/CalibrationValidation/HitEfficiency"
-  wwwdir="/afs/cern.ch/user/j/jlagram/www/HitEfficiency_11_3_2"
-
   #Now publish all of the relevant files
   #Create the relevant directories on a per run basis
   echo "Creating directories ..."
