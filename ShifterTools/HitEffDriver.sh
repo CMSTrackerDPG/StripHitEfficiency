@@ -383,7 +383,7 @@ rm BadModules.log
 ### Comparison with Predictions
 
 echo "Computing predicted efficiencies ..."
-python3 CompareWithPredictions.py $runnumber >& "predictions_$runnumber.log"
+python3 CompareWithPredictions.py $ERA $runnumber >& "predictions_$runnumber.log"
 StorePredictionsOutputs 
 MakeShifterSummary
 

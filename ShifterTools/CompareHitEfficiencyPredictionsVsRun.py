@@ -5,6 +5,7 @@ import subprocess
 import math
 import numpy as np
 import ROOT as R
+import runregistry
 
 sys.path.append(".")
 
@@ -14,16 +15,32 @@ R.gROOT.SetBatch(True)
 R.gStyle.SetOptTitle(1)
 
 
-def fillNumberFromRun(run):
-    f = open("/afs/cern.ch/user/j/jlagram/work/public/HitEfficiency/Fills/GR18/runlist_all.txt","r")
+def fillNumberFromRun_LocalFile(run):
     fill=-1
+    localdb = 'runlist_all.txt'
+    try:
+        f = open(localdb,'r')
+    except IOError:
+        print('File', localdb, 'not found')
+        return fill
+
     for x in f:
         if x.split(' ')[0]==run:
             fill=x.split(' ')[1]
             return int(fill)
     if fill==-1:
-        print('Warning: no fill found for run', run)
+        print('Warning: run', run, 'not found in local db')
+    f.close()
     return int(fill)
+
+def fillNumberFromRun_RunRegistry(run):
+    # Get runs info in querying RunRegistry and filtering
+    print('Requesting fill info the Run Registry')
+    runinfo = runregistry.get_run( run_number = run )
+    if not runinfo:
+        return -1
+    fill_num = runinfo['oms_attributes']['fill_number']
+    return fill_num
 
 def get_layer_name(layer):
   if layer<5: return 'TIB L'+str(layer)
@@ -79,7 +96,6 @@ def add_points(graph, directory, subdir, layer, filter=False):
         low = R.TEfficiency.Bayesian(total, found, .683, 1, 1, False)
         up = R.TEfficiency.Bayesian(total, found, .683, 1, 1, True)
 
-        fill = fillNumberFromRun(run)
 
         # PU info
         hpu = fdir.Get("PU")
@@ -91,27 +107,33 @@ def add_points(graph, directory, subdir, layer, filter=False):
         #print( 'PU (avg+/-rms): ', pu, '+/-', pu_err )
 
 
+        # get fill number
+        fill = fillNumberFromRun_LocalFile(run)
+        if fill==-1:
+          fill = fillNumberFromRun_RunRegistry(run) # contacting RR can take time
+          frunlist = open('runlist_all.txt','a+')
+          frunlist.write(run+' '+str(fill)+'\n')
+          frunlist.close()
+
         # creating json file with fill info if not existing
-        filldir='/afs/cern.ch/user/j/jlagram/work/public/HitEfficiency/Fills/GR18/'
-        fillJson_str = 'inputs/fills/fill'+str(fill)+'.json'
+        filldir='inputs/fills/'
+        fillTxt_str = filldir+'fill_'+str(fill)+'.txt'
+        fillJson_str = filldir+'fill_'+str(fill)+'.json'
         if not os.path.isfile(fillJson_str):
-            if not os.path.isfile(filldir+'fill_'+str(fill)+'.txt'):
-                ## TODO: Change lines by getting fill info from OMS
-                print('  Missing fill info for fill '+str(fill)+' in '+filldir)
-                exit()
-            else:
-                print('Producing file:', fillJson_str)
-                fillTxt_str = filldir+'fill_'+str(fill)+'.txt'
-                command_str1 = 'python3 MakeJson.py '+fillTxt_str
-                command_str2 = 'mv fill.json '+fillJson_str
-                os.system(command_str1)
-                os.system(command_str2)
+            if not os.path.isfile(fillTxt_str):
+                print('Requesting beam filling scheme from OMS')
+                os.system('python3 getBunchesFromOMS.py '+str(fill)+' | tail -1 | sed -e \'s/\'\\\'\'/"/g\' -e \'s/False/false/g\' -e \'s/True/true/g\' -e \'s/None/null/g\' > '+fillTxt_str)
+            print('Producing file:', fillJson_str)
+            command_str1 = 'python3 MakeJson.py '+fillTxt_str
+            command_str2 = 'mv fill.json '+fillJson_str
+            os.system(command_str1)
+            os.system(command_str2)
 
 
         # compute expected efficiency
 
         pred = EfficiencyCalculator()
-        # get PU
+        # set PU
         #pred.set_pileup(pu)
         pu_histo = fdir.Get("layertotal_vsPU_layer_"+str(layer)) # one entry per expected hits vs PU
         if pu_histo:
