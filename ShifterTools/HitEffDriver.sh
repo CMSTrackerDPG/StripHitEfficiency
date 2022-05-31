@@ -279,7 +279,8 @@ do
   rm -f BadModules_input.txt
 
   cmsRun "SiStripHitEff_run$runnumber.py" >& "run_${runnumber}_$FILEID.log"
-  mv "SiStripHitEffHistos_run$runnumber.root" "SiStripHitEffHistos_run${runnumber}_$FILEID.root"
+  rm run_${runnumber}_$FILEID.log
+  #mv "SiStripHitEffHistos_run$runnumber.root" "SiStripHitEffHistos_run${runnumber}_$FILEID.root"
   PUfilelist+="SiStripHitEffHistos_run${runnumber}_$FILEID.root,"
 
   IFILE=$((IFILE+1))

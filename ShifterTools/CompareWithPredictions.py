@@ -6,7 +6,6 @@ import subprocess
 import math
 import numpy as np
 from ROOT import TCanvas, TGraph, TGraphErrors, TGraphAsymmErrors, TFile, TEfficiency, TLine, TH1F, TLatex
-import runregistry
 sys.path.append(".")
 
 from EfficiencyCalculator import EfficiencyCalculator
@@ -29,14 +28,16 @@ def fillNumberFromRun_LocalFile(run):
     f.close()
     return int(fill)
 
-def fillNumberFromRun_RunRegistry(run):
-    # Get runs info in querying RunRegistry and filtering
-    print('Requesting fill info the Run Registry')
-    runinfo = runregistry.get_run( run_number = run )
-    if not runinfo:
-        return -1
-    fill_num = run['oms_attributes']['fill_number']
-    return fill_num
+def fillNumberFromRun_OMS(run):
+    # attributes : 'fill_number', 'fill_type_runtime', 'run_number', 'stable_beam' 
+    lines = subprocess.check_output(['python3', 'getFillNumberFromOMS.py', str(run)])
+    output = lines.decode('utf-8').split('\n')[1]
+    output = output.replace('\'','\"').replace('True','true').replace('False', 'false')
+    output_dict =  json.loads(output)
+    if not 'fill_number' in output_dict:
+         return -1
+    else:
+        return int(output_dict['fill_number'])
 
 def get_layer_name(layer, nLayers):
   if layer<5: return 'TIB L'+str(layer)
@@ -78,7 +79,7 @@ run = sys.argv[2]
 # get fill number
 fill = fillNumberFromRun_LocalFile(run)
 if fill==-1:
-    fill = fillNumberFromRun_RunRegistry(run) # contacting RR can take time
+    fill = fillNumberFromRun_OMS(run) # contacting OMS can take time
     frunlist = open('runlist_all.txt','a+')
     frunlist.write(run+' '+str(fill)+'\n')
     frunlist.close()
