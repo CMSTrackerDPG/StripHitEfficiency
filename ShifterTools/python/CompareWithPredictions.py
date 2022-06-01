@@ -6,8 +6,7 @@ import subprocess
 import math
 import numpy as np
 from ROOT import TCanvas, TGraph, TGraphErrors, TGraphAsymmErrors, TFile, TEfficiency, TLine, TH1F, TLatex
-sys.path.append(".")
-
+sys.path.append("../PredictionsModel")
 from EfficiencyCalculator import EfficiencyCalculator
 
 def fillNumberFromRun_LocalFile(run):
@@ -30,7 +29,7 @@ def fillNumberFromRun_LocalFile(run):
 
 def fillNumberFromRun_OMS(run):
     # attributes : 'fill_number', 'fill_type_runtime', 'run_number', 'stable_beam' 
-    lines = subprocess.check_output(['python3', 'getFillNumberFromOMS.py', str(run)])
+    lines = subprocess.check_output(['python3', '../PredictionsModel/python/getFillNumberFromOMS.py', str(run)])
     output = lines.decode('utf-8').split('\n')[1]
     output = output.replace('\'','\"').replace('True','true').replace('False', 'false')
     output_dict =  json.loads(output)
@@ -63,8 +62,7 @@ def get_layer_name(layer, nLayers):
 
 ################################################################################
   
-#wwwdir = '/afs/cern.ch/cms/tracker/sistrvalidation/WWW/CalibrationValidation/HitEfficiency/'
-wwwdir = '/afs/cern.ch/user/j/jlagram/www/HitEfficiency_11_3_2/'
+wwwdir = '/afs/cern.ch/cms/tracker/sistrvalidation/WWW/CalibrationValidation/HitEfficiency/'
 era = 'GR18'
 run = '320674'
 fill = -1
@@ -92,7 +90,7 @@ print('\nComputation of efficiency for run', run, 'of fill', fill)
 
 ### Get informations for a given run
 
-file_path = wwwdir+'run_'+run+'/withMasking/rootfile/SiStripHitEffHistos_run'+run+'.root'
+file_path = wwwdir+era+'/run_'+run+'/withMasking/rootfile/SiStripHitEffHistos_run'+run+'.root'
 if not os.path.isfile(file_path):
     print('File', file_path, 'does not exist')
     exit()
@@ -154,15 +152,18 @@ print('\nPU from input files:', ' mean={:.3}'.format(pu), ' , rms={:.3}'.format(
 ### Compute Predictions
 
 # creating json file with fill info if not existing
-filldir='inputs/fills/'
+filldir='fills/'
+if not os.path.isdir(filldir):
+    print('Directory', filldir, 'does not exist. Creating it.')
+    os.system('mkdir '+filldir)
 fillTxt_str = filldir+'fill_'+str(fill)+'.txt'
 fillJson_str = filldir+'fill_'+str(fill)+'.json'
 if not os.path.isfile(fillJson_str):
     if not os.path.isfile(fillTxt_str):
         print('Requesting beam filling scheme from OMS')
-        os.system('python3 getBunchesFromOMS.py '+str(fill)+' | tail -1 | sed -e \'s/\'\\\'\'/"/g\' -e \'s/False/false/g\' -e \'s/True/true/g\' -e \'s/None/null/g\' > '+fillTxt_str)
+        os.system('python3 ../PredictionsModel/python/getBunchesFromOMS.py '+str(fill)+' | tail -1 | sed -e \'s/\'\\\'\'/"/g\' -e \'s/False/false/g\' -e \'s/True/true/g\' -e \'s/None/null/g\' > '+fillTxt_str)
     print('Producing file:', fillJson_str)
-    command_str1 = 'python3 MakeJson.py '+fillTxt_str
+    command_str1 = 'python3 ../PredictionsModel/python/MakeJson.py '+fillTxt_str
     command_str2 = 'mv fill.json '+fillJson_str
     os.system(command_str1)
     os.system(command_str2)
@@ -174,7 +175,8 @@ os.system('cp '+fillJson_str+' fill.json')
 pred = EfficiencyCalculator()
 pred.set_pileup(pu)
 pred.set_fillscheme(fillJson_str)
-pred.read_inputs("inputs/HIPProbPerPU.root","inputs/LowPUOffset.root")
+pred.read_inputs("../PredictionsModel/inputs/HIPProbPerPU.root","../PredictionsModel/inputs/LowPUOffset.root")
+pred.read_reweight_factors("../PredictionsModel/inputs/factReweight.txt")
 
 # computing predictions
 gpred = TGraphErrors()
@@ -186,7 +188,7 @@ for ilay in range(1, nLayers+1):
     if pu_histo:
         pred.set_pileup_histo(pu_histo)
     layer = get_layer_name(ilay,nLayers)
-    pred.read_deadtime("inputs/Ndeadtime.txt",layer)
+    pred.read_deadtime("../PredictionsModel/inputs/Ndeadtime.txt",layer)
     expected = pred.compute_avg_eff_layer(layer)
     error = np.sqrt(pred.compute_error_avg_eff_layer(layer))
     print('Layer',ilay,layer,': {:.4}'.format(expected),'+/-','{:.3}'.format(error))

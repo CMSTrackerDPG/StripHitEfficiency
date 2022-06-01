@@ -21,6 +21,7 @@ class EfficiencyCalculator:
         self.__pileup_histo = ROOT.TH1F()
         self.__layer = ''
         self.__deadtime = 0.
+        self.__reweight_factors={}
 
     def get_pileup(self):
         return self.__pileup
@@ -83,15 +84,22 @@ class EfficiencyCalculator:
         self.__error = error
         return nDeadTime,error
 
-    def reweight_scheme(self,layer):
+    def read_reweight_factors(self,reweightpath):
         #--- correction to describe filling scheme of the fill used to compute the dead-time values
-        factor=1.
-        with open('inputs/factReweight.txt','r') as f:
+        self.__reweight_factors={}
+        with open(reweightpath,'r') as f:
             rs=f.readlines()
             for r in rs:
                 c=r.split()
-                if c[0]+' '+c[1] == layer:
-                    factor/=float(c[2])
+                self.__reweight_factors[c[0]+' '+c[1]] = 1./float(c[2])
+
+    def reweight_scheme(self,layer):
+        #--- correction to describe filling scheme of the fill used to compute the dead-time values
+        factor=1.
+        if layer in self.__reweight_factors:
+            factor=self.__reweight_factors[layer]
+        #else:
+        #    print('Warning: reweighting factor not found for layer', layer, '. Using 1.')
         return factor
 
 

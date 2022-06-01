@@ -9,7 +9,7 @@ CreateTrendPlotsIndex()
   LASTUPDATE=`date`
 
   #Generate an index.html file to hold the plots
-  cat /afs/cern.ch/cms/tracker/sistrvalidation/WWW/template_index_header.html | sed -e "s@insertPageName@Hit Efficiency Trend Plots@g" > index_new.html
+  cat template/template_index_header.html | sed -e "s@insertPageName@Hit Efficiency Trend Plots@g" > index_new.html
 
   if [ "$rootname" = "SiStripHitEffTrendPlot" ]
   then
@@ -34,7 +34,7 @@ EOF
     if [ "$(($layer%2))" -eq 0 ]; then echo "</TR>" >> index_new.html; fi
    done
 
-  cat /afs/cern.ch/cms/tracker/sistrvalidation/WWW/template_index_foot.html | sed -e "s@insertDate@$LASTUPDATE@g" >> index_new.html
+  cat template/template_index_foot.html | sed -e "s@insertDate@$LASTUPDATE@g" >> index_new.html
    
 }
 
@@ -79,22 +79,22 @@ mkdir -p $wwwdir/$ERA/TrendPlots
 
 echo "Using outputs from 'standard' directories"
 mkdir -p $wwwdir/$ERA/TrendPlots/standard
-python3 DrawHitEfficiencyVsRun.py $ERA standard
+python3 python/DrawHitEfficiencyVsRun.py $ERA standard
 StoreTrendPlotsOutput SiStripHitEffTrendPlot $ERA standard
 
 echo "Using outputs from 'withMasking' directories"
 mkdir -p $wwwdir/$ERA/TrendPlots/withMasking
-python3 DrawHitEfficiencyVsRun.py $ERA withMasking
+python3 python/DrawHitEfficiencyVsRun.py $ERA withMasking
 StoreTrendPlotsOutput SiStripHitEffTrendPlot $ERA withMasking
 
 echo "Using outputs from 'withMasking' directories for results vs inst. lumi."
 mkdir -p $wwwdir/$ERA/TrendPlots/vsLumi
-python3 DrawHitEfficiencyVsLumi.py $ERA
+python3 python/DrawHitEfficiencyVsLumi.py $ERA
 StoreTrendPlotsOutput SiStripHitEffTrendPlotVsLumi $ERA vsLumi
 
 echo "Using outputs from 'withMasking' directories for results vs pile-up"
 mkdir -p $wwwdir/$ERA/TrendPlots/vsPU
-python3 DrawHitEfficiencyVsLumi.py $ERA 1
+python3 python/DrawHitEfficiencyVsLumi.py $ERA 1
 StoreTrendPlotsOutput SiStripHitEffTrendPlotVsPU $ERA vsPU
 
 

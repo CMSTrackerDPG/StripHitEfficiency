@@ -24,7 +24,7 @@ wwwdir="/afs/cern.ch/cms/tracker/sistrvalidation/WWW/CalibrationValidation/HitEf
 #        let COUNTER++
 #    done
 #
-#    cat /afs/cern.ch/cms/tracker/sistrvalidation/WWW/template_index_foot.html | sed -e "s@insertDate@$LASTUPDATE@g" >> index_new.html
+#    cat template/template_index_foot.html | sed -e "s@insertDate@$LASTUPDATE@g" >> index_new.html
 #
 #    mv -f index_new.html index.html
 #}
@@ -54,7 +54,7 @@ EOF
   <br> Summary.png </TD> </TR> 
 EOF
 
-    cat /afs/cern.ch/cms/tracker/sistrvalidation/WWW/template_index_foot.html | sed -e "s@insertDate@$LASTUPDATE@g" >> index_new.html
+    cat template/template_index_foot.html | sed -e "s@insertDate@$LASTUPDATE@g" >> index_new.html
 
     mv -f index_new.html index.html
 }
@@ -92,12 +92,16 @@ StoreOutputs ()
   then
     mv BadModules_input.txt "$wwwdir/$ERA/run_$runnumber/$analysistype/QualityLog"
   fi
+  if [ -f goodPU_filelist.txt ]
+  then
+    mv goodPU_filelist.txt "$wwwdir/$ERA/run_$runnumber/$analysistype/QualityLog"
+  fi
 
   #Move the root file containing hot cold maps
   mv "SiStripHitEffHistos_run$runnumber.root" "$wwwdir/$ERA/run_$runnumber/$analysistype/rootfile"
 
   #Generate an index.html file to hold the TKMaps
-  cat /afs/cern.ch/cms/tracker/sistrvalidation/WWW/template_index_header.html | sed -e "s@insertPageName@Validation Plots --- Hit Efficiency Study --- Tracker Maps@g" > index_new.html
+  cat template/template_index_header.html | sed -e "s@insertPageName@Validation Plots --- Hit Efficiency Study --- Tracker Maps@g" > index_new.html
   CreateIndex
 
   mv index.html "$wwwdir/$ERA/run_$runnumber/$analysistype/Plots"
@@ -116,7 +120,7 @@ StoreOutputs ()
 	ID1=`uuidgen -t`
 	#cp dbfile.db SiStripHitEffBadModules@${ID1}.db # before payload whas appended to the file
 	mv dbfile.db SiStripHitEffBadModules@${ID1}.db
-	cat template_SiStripHitEffBadModules.txt | sed -e "s@insertFirstRun@$runnumber@g" -e "s@insertIOV@$runnumber@" > SiStripHitEffBadModules@${ID1}.txt
+	cat template/template_SiStripHitEffBadModules.txt | sed -e "s@insertFirstRun@$runnumber@g" -e "s@insertIOV@$runnumber@" > SiStripHitEffBadModules@${ID1}.txt
 
 	mv "SiStripHitEffBadModules@${ID1}.db" "$wwwdir/$ERA/run_$runnumber/$analysistype/sqlite"
 	mv "SiStripHitEffBadModules@${ID1}.txt" "$wwwdir/$ERA/run_$runnumber/$analysistype/sqlite"
@@ -156,7 +160,7 @@ MakeShifterSummary ()
   echo "Creating summary page"
   LASTUPDATE=`date`
 
-  cat /afs/cern.ch/cms/tracker/sistrvalidation/WWW/template_index_header.html | sed -e "s@insertPageName@Validation Plots --- Hit Efficiency Study --- Tracker Maps@g" > index_new.html
+  cat template/template_index_header.html | sed -e "s@insertPageName@Validation Plots --- Hit Efficiency Study --- Tracker Maps@g" > index_new.html
 
   cat >> index_new.html  << EOF
 <TR> <TD align=center> <a href="../standard/Plots/SiStripHitEffTKMapBad.png"><img src="../standard/Plots/SiStripHitEffTKMapBad.png"hspace=5 vspace=5 border=0 style="width: 90%" ALT="SiStripHitEffTKMapBad.png"></a> 
@@ -183,7 +187,7 @@ EOF
   <br> Comparison with predictions </TD> </TR> 
 EOF
 
-  cat /afs/cern.ch/cms/tracker/sistrvalidation/WWW/template_index_foot.html | sed -e "s@insertDate@$LASTUPDATE@g" >> index_new.html
+  cat template/template_index_foot.html | sed -e "s@insertDate@$LASTUPDATE@g" >> index_new.html
 
   mkdir "$wwwdir/$ERA/run_$runnumber/shifterSummary"
   mv -f index_new.html "$wwwdir/$ERA/run_$runnumber/shifterSummary/index.html"
@@ -272,7 +276,7 @@ do
   echo "RUNNING ON FILE $FILEID: $file"
   fullpathfile="'root://eoscms//eos/cms$EOSpath/$ERA/$file'"
 
-  cp SiStripHitEff_template.py "SiStripHitEff_run$runnumber.py"
+  cp template/SiStripHitEff_template.py "SiStripHitEff_run$runnumber.py"
   sed -i "s/newrun/$runnumber/g" "SiStripHitEff_run$runnumber.py"
   sed -i "s|'root://eoscms//eos/cms/newfilelocation'|$fullpathfile|g" "SiStripHitEff_run$runnumber.py"
 
@@ -280,7 +284,7 @@ do
 
   cmsRun "SiStripHitEff_run$runnumber.py" >& "run_${runnumber}_$FILEID.log"
   rm run_${runnumber}_$FILEID.log
-  #mv "SiStripHitEffHistos_run$runnumber.root" "SiStripHitEffHistos_run${runnumber}_$FILEID.root"
+  mv "SiStripHitEffHistos_run$runnumber.root" "SiStripHitEffHistos_run${runnumber}_$FILEID.root"
   PUfilelist+="SiStripHitEffHistos_run${runnumber}_$FILEID.root,"
 
   IFILE=$((IFILE+1))
@@ -292,8 +296,10 @@ done
 echo "Analysing PU conditions ..."
 echo ""
 rm -f goodPU_filelist.txt
-python3 analyse_files_PU.py $PUfilelist >& "run_${runnumber}_PU.log"
+python3 python/analyse_files_PU.py $PUfilelist >& "run_${runnumber}_PU.log"
 cat run_${runnumber}_PU.log
+PUfilelist_toremove=`echo $PUfilelist | sed -e 's/,/ /g' `
+rm -f $PUfilelist_toremove
 
 # Cleaned list of files
 if [ -f goodPU_filelist.txt ]
@@ -336,7 +342,7 @@ echo "--------------------------"
 
 ### Running first pass for identifying inefficient modules
 
-cp SiStripHitEff_template.py "SiStripHitEff_run$runnumber.py"
+cp template/SiStripHitEff_template.py "SiStripHitEff_run$runnumber.py"
 sed -i "s/newrun/$runnumber/g" "SiStripHitEff_run$runnumber.py"
 sed -i "s|'root://eoscms//eos/cms/newfilelocation'|$fullpathfilelist|g" "SiStripHitEff_run$runnumber.py"
 
@@ -358,7 +364,7 @@ StoreOutputs standard
 
 mv BadModules.log BadModules_input.txt
 
-cp SiStripHitEff_template.py "SiStripHitEff_run$runnumber.py"
+cp template/SiStripHitEff_template.py "SiStripHitEff_run$runnumber.py"
 sed -i "s/newrun/$runnumber/g" "SiStripHitEff_run$runnumber.py"
 sed -i "s|'root://eoscms//eos/cms/newfilelocation'|$fullpathfilelist|g" "SiStripHitEff_run$runnumber.py"
 
@@ -384,7 +390,7 @@ rm BadModules.log
 ### Comparison with Predictions
 
 echo "Computing predicted efficiencies ..."
-python3 CompareWithPredictions.py $ERA $runnumber >& "predictions_$runnumber.log"
+python3 python/CompareWithPredictions.py $ERA $runnumber >& "predictions_$runnumber.log"
 StorePredictionsOutputs 
 MakeShifterSummary
 
