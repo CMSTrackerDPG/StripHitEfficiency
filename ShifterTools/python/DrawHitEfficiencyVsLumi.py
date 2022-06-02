@@ -4,6 +4,7 @@ import subprocess
 import math
 from ROOT import TCanvas, TGraph, TGraphAsymmErrors, TFile, TEfficiency
 import ctypes
+import web_directory
 
 import ROOT
 ROOT.gROOT.SetBatch(True)
@@ -77,7 +78,7 @@ def add_points(graph, directory, layer, usePU):
 
 
 #------------------------------------------------------------------
-hiteffdir="/afs/cern.ch/cms/tracker/sistrvalidation/WWW/CalibrationValidation/HitEfficiency"
+
 
 if len(sys.argv)<2:
   print("Syntax is:  DrawHitEfficiencyVsLumi.py  ERA [usePU] ")
@@ -105,7 +106,7 @@ for layer in range(1,35):
 
   graphs.append( TGraphAsymmErrors() )
   eff_vs_lumi = graphs[-1]
-  xlabels = add_points(eff_vs_lumi, hiteffdir+"/"+era, layer, usePU)
+  xlabels = add_points(eff_vs_lumi, web_repository.wwwdir_read+"/"+era, layer, usePU)
 
   eff_vs_lumi.SetTitle(get_layer_name(layer))
   eff_vs_lumi.GetYaxis().SetTitle("hit efficiency")

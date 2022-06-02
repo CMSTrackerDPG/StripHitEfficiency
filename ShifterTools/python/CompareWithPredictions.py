@@ -8,6 +8,7 @@ import numpy as np
 from ROOT import TCanvas, TGraph, TGraphErrors, TGraphAsymmErrors, TFile, TEfficiency, TLine, TH1F, TLatex, TLegend
 sys.path.append("../PredictionsModel")
 from EfficiencyCalculator import EfficiencyCalculator
+import web_directory 
 
 def fillNumberFromRun_LocalFile(run):
     fill=-1
@@ -62,7 +63,6 @@ def get_layer_name(layer, nLayers):
 
 ################################################################################
   
-wwwdir = '/afs/cern.ch/cms/tracker/sistrvalidation/WWW/CalibrationValidation/HitEfficiency/'
 era = 'GR18'
 run = '320674'
 fill = -1
@@ -90,7 +90,7 @@ print('\nComputation of efficiency for run', run, 'of fill', fill)
 
 ### Get informations for a given run
 
-file_path = wwwdir+era+'/run_'+run+'/withMasking/rootfile/SiStripHitEffHistos_run'+run+'.root'
+file_path = web_directory.wwwdir_read+era+'/run_'+run+'/withMasking/rootfile/SiStripHitEffHistos_run'+run+'.root'
 if not os.path.isfile(file_path):
     print('File', file_path, 'does not exist')
     exit()

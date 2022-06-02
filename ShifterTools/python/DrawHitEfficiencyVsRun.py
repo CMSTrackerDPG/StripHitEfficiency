@@ -3,11 +3,11 @@ import os
 import subprocess
 import math
 from ROOT import TCanvas, TText, TGraphAsymmErrors, TFile, TEfficiency, TLegend
+import web_directory
 
 import ROOT
 ROOT.gROOT.SetBatch(True)
 ROOT.gStyle.SetOptTitle(1)
-
 
 def get_layer_name(layer):
   if layer<5: return 'TIB L'+str(layer)
@@ -135,9 +135,6 @@ def draw_subdet(graphs, subdet):
 #------------------------------------------------------------------
 
 
-
-hiteffdir="/afs/cern.ch/cms/tracker/sistrvalidation/WWW/CalibrationValidation/HitEfficiency"
-
 if len(sys.argv)<3:
   print("Syntax is:  DrawHitEfficiencyVsRun.py  ERA  SUBDIRECTORY")
   print("  example:  DrawHitEfficiencyVsRun.py GR17 standard")
@@ -162,7 +159,7 @@ for layer in range(1,35):
   graphs.append( TGraphAsymmErrors() )
   eff_vs_run = graphs[-1]
 
-  xlabels = add_points(eff_vs_run, hiteffdir+"/"+era, subdir, layer)
+  xlabels = add_points(eff_vs_run, web_repository.wwwdir_read+"/"+era, subdir, layer)
 
   eff_vs_run.SetTitle(get_layer_name(layer))
   #eff_vs_run.GetXaxis().SetTitle("run number")

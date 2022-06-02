@@ -3,6 +3,7 @@ import os
 import subprocess
 import math
 import ROOT as R
+import web_directory
 
 R.gROOT.SetBatch(True)
 R.gStyle.SetOptTitle(1)
@@ -167,9 +168,6 @@ def draw_subdet(graphs, subdet):
 #------------------------------------------------------------------
 
 
-
-hiteffdir="/afs/cern.ch/cms/tracker/sistrvalidation/WWW/CalibrationValidation/HitEfficiency"
-
 if len(sys.argv)<3:
   print("Syntax is:  DrawHitEfficiencyVsRun.py  ERA  SUBDIRECTORY")
   print("  example:  DrawHitEfficiencyVsRun.py GR17 standard")
@@ -195,8 +193,8 @@ for layer in range(1,10):#35
   eff_vs_run = graphs[-1]
   eff_vs_run_filtered = R.TGraphAsymmErrors()
 
-  xlabels = add_points(eff_vs_run, hiteffdir+"/"+era, subdir, layer)
-  add_points(eff_vs_run_filtered, hiteffdir+"/"+era, subdir, layer, True)
+  xlabels = add_points(eff_vs_run, web_repository.wwwdir_read+"/"+era, subdir, layer)
+  add_points(eff_vs_run_filtered, web_repository.wwwdir_read+"/"+era, subdir, layer, True)
 
   eff_vs_run.SetTitle(get_layer_name(layer))
   #eff_vs_run.GetXaxis().SetTitle("run number")
