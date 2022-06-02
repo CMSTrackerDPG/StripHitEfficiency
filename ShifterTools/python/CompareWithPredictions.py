@@ -5,7 +5,7 @@ import os
 import subprocess
 import math
 import numpy as np
-from ROOT import TCanvas, TGraph, TGraphErrors, TGraphAsymmErrors, TFile, TEfficiency, TLine, TH1F, TLatex
+from ROOT import TCanvas, TGraph, TGraphErrors, TGraphAsymmErrors, TFile, TEfficiency, TLine, TH1F, TLatex, TLegend
 sys.path.append("../PredictionsModel")
 from EfficiencyCalculator import EfficiencyCalculator
 
@@ -250,7 +250,11 @@ tex1 = TLatex(0.4,0.92,gmeas_cl.GetTitle())
 tex1.SetNDC()
 tex1.Draw()
 
-
+leg = TLegend(0.65, 0.2, 0.85, 0.4,'','NDC')
+leg.AddEntry(gmeas_cl,'measurements','p')
+leg.AddEntry(gpred,'predictions','p')
+leg.SetLineColor(0)
+leg.Draw()
 
 # Computing and drawing ratio
 
