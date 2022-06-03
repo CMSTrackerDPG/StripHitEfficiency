@@ -106,7 +106,7 @@ for layer in range(1,35):
 
   graphs.append( TGraphAsymmErrors() )
   eff_vs_lumi = graphs[-1]
-  xlabels = add_points(eff_vs_lumi, web_repository.wwwdir_read+"/"+era, layer, usePU)
+  xlabels = add_points(eff_vs_lumi, web_directory.wwwdir_read+"/"+era, layer, usePU)
 
   eff_vs_lumi.SetTitle(get_layer_name(layer))
   eff_vs_lumi.GetYaxis().SetTitle("hit efficiency")
