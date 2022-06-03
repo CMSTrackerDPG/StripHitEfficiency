@@ -21,6 +21,7 @@ class EfficiencyCalculator:
         self.__pileup_histo = ROOT.TH1F()
         self.__layer = ''
         self.__deadtime = 0.
+        self.__offset_value = 0.
         self.__reweight_factors={}
 
     def get_pileup(self):
@@ -106,8 +107,8 @@ class EfficiencyCalculator:
     def compute_eff_layer(self,train,layer,useOffsetLowPU=True):
         # hit efficiency computed with dead time model - for a given scheme structure(train),low pile-up offset(TH1), HIP probabilities(TH1),average pile-up,layer
         self.__layer = layer
-        Offset_value = 0
-        HIPprob_value = 1
+        Offset_value = 0.
+        HIPprob_value = 1.
         h_hipprod = self.__hipprob.Clone()
         pu = self.__pileup
         pu_rew=pu*self.reweight_scheme(layer)
@@ -118,7 +119,7 @@ class EfficiencyCalculator:
                 Offset_value = self.__offset.GetBinContent(x) #load low pile-up offset for the given layer
                 self.__error_offset_value = self.__offset.GetBinError(x) #save low-pu offset error for the given layer 
         if(useOffsetLowPU==False):
-            Offset_value = 1 
+            Offset_value = 1. 
         self.__offset_value = Offset_value
         eff_list = {}
         efficiency = Offset_value
@@ -139,13 +140,16 @@ class EfficiencyCalculator:
     def compute_avg_eff_layer(self,layer):
         #print('computing average efficiency over orbit for layer: ',layer)
         idx=0
-        value=0.0
+        value=0.
         for train in self.__fillscheme:
             for bx1 in range(train[0],train[1]+1):
                 value+=(self.compute_eff_layer(train,layer,True))[bx1]
                 idx+=1
-        self.__avgefflayer = value/idx
-        return value/idx
+        if idx>0:
+            self.__avgefflayer = value/idx
+        else:
+            self.__avgefflayer = 1.
+        return self.__avgefflayer
 
 
     def compute_fill_factor(self):
@@ -159,8 +163,9 @@ class EfficiencyCalculator:
         # Average the impact of the 'historical' function on each bx of the orbit
         # Assumption is made that the recovery is total between 2 trains and that the space between bunches in a train is 25ns
         idx=0
-        value=0.0
+        value=0.
         efficiency = 0.
+        fill_factor = 1.
 
         for train in self.__fillscheme:
             index = 0
@@ -172,12 +177,12 @@ class EfficiencyCalculator:
                 value+=efficiency
                 index+=1
                 idx+=1
-        if idx==0:
+        if idx>0:
+            fill_factor = value/idx
+        else:
             print('Warning: no bx found in fill scheme')
-            return 0
 
-        self.__avgefflayer = value/idx
-        return value/idx
+        return fill_factor
 
 
     def compute_avg_eff_layer_factorized(self,layer,useOffsetLowPU=True):
@@ -195,8 +200,8 @@ class EfficiencyCalculator:
             return 0.
 
         # Get HIP proba and offset value for the given layer
-        Offset_value = 0
-        HIPprob_value = 1
+        Offset_value = 0.
+        HIPprob_value = 1.
         for x in range(0,(self.__hipprob).GetNbinsX()+1):
             if self.__layer == self.__hipprob.GetXaxis().GetBinLabel(x):
                 HIPprob_value = self.__hipprob.GetBinContent(x)*1e-5 #load HIP probability for the given layer
@@ -204,7 +209,7 @@ class EfficiencyCalculator:
                 Offset_value = self.__offset.GetBinContent(x) #load low pile-up offset for the given layer
                 self.__error_offset_value = self.__offset.GetBinError(x) #save low-pu offset error for the given layer
         if(useOffsetLowPU==False):
-            Offset_value = 1
+            Offset_value = 1.
         self.__offset_value = Offset_value
 
         # Compute inefficiency factor of the fill scheme
@@ -230,7 +235,7 @@ class EfficiencyCalculator:
             if total_weight!=0 :
                 avg_eff /= total_weight
             else :
-                avg_eff = 0
+                avg_eff = 0.
             self.__avgefflayer = avg_eff
 
         return self.__avgefflayer
@@ -239,7 +244,7 @@ class EfficiencyCalculator:
         if self.__offset_value > 0 and self.__deadtime > 0:
             err_avg_eff = ( pow(self.__error_offset_value/self.__offset_value,2) + pow(self.__error/self.__deadtime,2) ) * pow(1-self.__avgefflayer,2)
         else :
-            err_avg_eff = 0
+            err_avg_eff = 0.
         self.__error_avgeff = err_avg_eff
         return err_avg_eff
 
