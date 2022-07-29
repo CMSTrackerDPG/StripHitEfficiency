@@ -6,7 +6,7 @@ import math
 import numpy as np
 import ROOT as R
 import runregistry
-import web_directory
+import settings
 
 sys.path.append(".")
 
@@ -264,8 +264,8 @@ for layer in range(1,10):#35
   eff_vs_run = graphs[-1]
   eff_vs_run_filtered = R.TGraphAsymmErrors()
 
-  xlabels = add_points(eff_vs_run, web_directory.wwwdir_read+"/"+era, subdir, layer)
-  #add_points(eff_vs_run_filtered, web_directory.wwwdir_read+"/"+era, subdir, layer, True)
+  xlabels = add_points(eff_vs_run, settings.wwwdir_read+"/"+era, subdir, layer)
+  #add_points(eff_vs_run_filtered, settings.wwwdir_read+"/"+era, subdir, layer, True)
 
   eff_vs_run.SetTitle(get_layer_name(layer))
   #eff_vs_run.GetXaxis().SetTitle("run number")

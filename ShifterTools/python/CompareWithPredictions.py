@@ -8,7 +8,7 @@ import numpy as np
 from ROOT import TCanvas, TGraph, TGraphErrors, TGraphAsymmErrors, TFile, TEfficiency, TLine, TH1F, TLatex, TLegend
 sys.path.append("../PredictionsModel")
 from EfficiencyCalculator import EfficiencyCalculator
-import web_directory 
+import settings 
 
 def fillNumberFromRun_LocalFile(run):
     fill=-1
@@ -65,16 +65,21 @@ def get_layer_name(layer, nLayers):
   
 era = 'GR18'
 run = '320674'
-fill = -1
+input_version='DQM' # DQM or CALIBTREE
 
 if len(sys.argv)<3:
-  print('  Missing arguments : CompareWithPredictions.py era runnumber')
+  print('  Missing arguments : CompareWithPredictions.py era runnumber [input_version]')
   exit()
 
 era = sys.argv[1]
 run = sys.argv[2]
+
+if len(sys.argv)>3:
+input_version = sys.argv[3]
+
  
 # get fill number
+fill = -1
 fill = fillNumberFromRun_LocalFile(run)
 if fill==-1:
     fill = fillNumberFromRun_OMS(run) # contacting OMS can take time
@@ -90,28 +95,37 @@ print('\nComputation of efficiency for run', run, 'of fill', fill)
 
 ### Get informations for a given run
 
-file_path = web_directory.wwwdir_read+era+'/run_'+run+'/withMasking/rootfile/SiStripHitEffHistos_run'+run+'.root'
-if not os.path.isfile(file_path):
-    print('File', file_path, 'does not exist')
-    exit()
+if input_version=='DQM':
+    file_path = settings.wwwdir_read+era+'/run_'+run+'/dqm/rootfile/SiStripHitEffHistos_run'+run+'.root'
+else:
+    file_path = settings.wwwdir_read+era+'/run_'+run+'/withMasking/rootfile/SiStripHitEffHistos_run'+run+'.root'
+    if not os.path.isfile(file_path):
+        print('File', file_path, 'does not exist')
+        exit()
 frun = TFile(file_path)
 fdir = frun.GetDirectory('SiStripHitEff')
 
 
 # efficiency
 gmeas = fdir.Get('eff_good')
-
+nLayers = gmeas.GetN()-1
 if gmeas == None:
     print('  Missing graph in file '+frun.GetName())
     exit()
 
-nLayers = gmeas.GetN()-1
+print('N layers:', nLayers)
+
 tlist = gmeas.GetXaxis().GetLabels()
 list_label=[]
-for i in range(0, tlist.GetSize()):
-    list_label.append(tlist.At(i).GetString().Data())
-print('Available layers:')
-print(list_label)
+if tlist == None:
+    print('Warning: no layers labels found.')
+    for i in range(1,nLayers+1):
+        list_label.append('')
+else:
+    for i in range(0, tlist.GetSize()):
+        list_label.append(tlist.At(i).GetString().Data())
+    print('Available layers:')
+    print(list_label)
 
 if nLayers==22 or nLayers==34:
     print('\nWarning:', nLayers, 'layers found. Prediction computation is only valid per ring for the end-caps and not per disk. Using only barrel layers.' )
