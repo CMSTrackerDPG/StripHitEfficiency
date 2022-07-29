@@ -68,14 +68,14 @@ run = '320674'
 input_version='DQM' # DQM or CALIBTREE
 
 if len(sys.argv)<3:
-  print('  Missing arguments : CompareWithPredictions.py era runnumber [input_version]')
-  exit()
+    print('  Missing arguments : CompareWithPredictions.py era runnumber [input_version]')
+    exit()
 
 era = sys.argv[1]
 run = sys.argv[2]
 
 if len(sys.argv)>3:
-input_version = sys.argv[3]
+    input_version = sys.argv[3]
 
  
 # get fill number
@@ -108,7 +108,7 @@ fdir = frun.GetDirectory('SiStripHitEff')
 
 # efficiency
 gmeas = fdir.Get('eff_good')
-nLayers = gmeas.GetN()-1
+nLayers = gmeas.GetN()
 if gmeas == None:
     print('  Missing graph in file '+frun.GetName())
     exit()
@@ -185,6 +185,14 @@ else:
     print('File', fillJson_str, 'exists')
 os.system('cp '+fillJson_str+' fill.json')
 
+# If OMS returns an empty fill scheme, compute it from bx histo
+with open('fill.json') as json_input:
+    bx_list = json.load(json_input)
+    if len(bx_list)==0:
+        print('\nEmpty fill scheme from DB, computing it from histo ...')
+        os.system('python3 ../PredictionsModel/python/MakeJsonFromBxHisto.py '+file_path)
+        os.system('mv fill.json '+fillJson_str)
+
 # setting inputs
 pred = EfficiencyCalculator()
 pred.set_pileup(pu)
@@ -208,7 +216,7 @@ for ilay in range(1, nLayers+1):
     print('Layer',ilay,layer,': {:.4}'.format(expected),'+/-','{:.3}'.format(error))
     gpred.SetPoint(ilay-1, ilay-0.5, expected) 
     gpred.SetPointError(ilay-1, 0, error) 
-    gpred.GetXaxis().SetBinLabel(i, list_label[i-1])
+    if i<len(list_label): gpred.GetXaxis().SetBinLabel(i, list_label[i-1])
 #######################################
 
 

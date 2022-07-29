@@ -326,7 +326,7 @@ then
   echo "--------------------------"
 
 
-  globaltag=`python/getTier0GlobalTags.py $runnumber`
+  globaltag=`python/getTier0GlobalTag.py $runnumber`
   echo GlobalTag: $globaltag
 
   cmsDriver.py stepHarvest -s ALCAHARVEST:SiStripHitEff --conditions $globaltag --scenario pp --data --era $GLOBALTAG_ERA --filein filetoreplace --no_exec
