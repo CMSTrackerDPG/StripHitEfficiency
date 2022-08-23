@@ -108,7 +108,7 @@ NFILESPERJOB=10
 NJOBS=$(( $NFILES/$NFILESPERJOB +1))
 NENDFILES=$(( $NFILES%$NFILESPERJOB ))
 
-$NJOBS > njobs.txt
+echo $NJOBS > njobs.txt
 cp njobs.txt $WORKDIR
 
 cp $CODEDIR/SiStripHitEff_HTCondor_fill_template.py SiStripHitEff_HTCondor_fill.py
