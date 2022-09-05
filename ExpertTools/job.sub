@@ -1,5 +1,6 @@
 executable            = $(codedir)/cmsRun_batch_eos
 arguments             = $(codedir) $(workdir)/SiStripHitEff_HTCondor_fill.py filelist.txt $(ProcId) $(nfilesperjob)  
+transfer_input_files  = BadModules_input.txt
 
 output                = $(workdir)/jobs_output/output.$(ClusterId).$(ProcId).out
 error                 = $(workdir)/jobs_output/error.$(ClusterId).$(ProcId).err
