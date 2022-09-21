@@ -28,7 +28,7 @@ echo "A total of $NTOTJOB jobs were sent."
 NJOB=0
 NGOOD=0
 echo "New bad modules found:"
-for LOG in `ls $1/jobs_output/*.err`
+for LOG in `ls $1/jobs_output/*.out` # or *.err depending on configurations
 do
  NJOB=$(( $NJOB + 1 ))
  STATUS=`cat $LOG | grep "New IOV" | wc -l`

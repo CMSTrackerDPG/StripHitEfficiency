@@ -52,3 +52,13 @@ It prints also the remaining inefficient modules. It is good to check that no mo
 Only the histograms are correctly merged in the previous step using the ROOT hadd command. This script recomputes correctly the efficiencies from the histograms and save the TGraphs. The output file is named *SiStripHitEffHistos_fill_merged.root* .
 
 
+### What to do in case of remaining inefficient modules
+
+When running the *check_jobs_results.sh* script, the number of remaining inefficient modules in each job is printed.
+It is possible to add them to the list of modules to be masked *BadModules_input.txt* with the following command:
+`./merge_bad_modules_lists.sh RESULTS_DIRECTORY`
+If there is a file *BadModules_input.txt* in the directory, it will be used as a baseline.
+The new *BadModules_input.txt* is written in the local directory and can be used to produce new results.
+
+When *BadModules_input.txt* is provided (is in the local directory) it can directly be used with the script:
+`./launch_fill_analysis_batch_manual_masking.sh FILLNUMBER`

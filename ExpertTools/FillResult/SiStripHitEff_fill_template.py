@@ -40,7 +40,8 @@ process.SiStripHitEff = cms.EDAnalyzer("SiStripHitEffFromCalibTree",
     showTOB6TEC9      = cms.untracked.bool(False),  # default False
     TkMapMin          = cms.untracked.double(0.90), # default 0.90
     EffPlotMin        = cms.untracked.double(0.90), # default 0.90
-    Title             = cms.string(' Hit Efficiency ')
+    Title             = cms.string(' Hit Efficiency '),
+    StoreModuleEff    = cms.untracked.bool(True)  # default False
 )
 
 process.PoolDBOutputService = cms.Service("PoolDBOutputService",

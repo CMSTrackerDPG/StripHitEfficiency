@@ -47,6 +47,7 @@ for key in source.GetListOfKeys():
           output.cd()
           graph = TGraphAsymmErrors()
           graph.BayesDivide(hfound, htot)
+          graph.GetXaxis().SetLimits(0, graph.GetN()-1)
           for ibin in range( graph.GetN() ):
             graph.SetPointEXlow(ibin, 0)
             graph.SetPointEXhigh(ibin, 0)

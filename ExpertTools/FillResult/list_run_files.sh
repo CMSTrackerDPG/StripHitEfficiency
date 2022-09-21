@@ -9,7 +9,7 @@ fi
 
   #####################
   # Run period to be updated manually
-  ERA="GR18"
+  ERA="GR22"
   #echo "era: $ERA"
   #####################
 
