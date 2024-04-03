@@ -9,6 +9,18 @@ The results are made from calibration tree files produced from Express AlcaReco 
 A pre-analysis of the pile-up is run for removing tree files with large PU variations. Then the analysis is done twice. The second time the very inefficient modules are masked.
 The results are compared with a predictive model. At the end trend plots are produced with`TrendPlots.sh`.
 
+### Customization
+
+Some paramaters that can be updated in HitEffDriver.sh:
+- type of read inputs: CALIBTREE or DQM
+- for CALIBTREE : PU_CLEANING for applying the file removal depending on their PU distribution
+- for DQM : GLOBALTAG\_ERA
+
+- default value of era: like GR23
+- default value of number of input files to be used
+
+When running on DQM files the grid proxy has to be init. `voms-proxy-init -voms cms -rfc`
+
 ## TrendPlots.sh
 
 `./TrendPlots.sh ERA`

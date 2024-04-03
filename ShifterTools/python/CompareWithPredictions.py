@@ -96,7 +96,7 @@ print('\nComputation of efficiency for run', run, 'of fill', fill)
 ### Get informations for a given run
 
 if input_version=='DQM':
-    file_path = settings.wwwdir_read+era+'/run_'+run+'/dqm/rootfile/SiStripHitEffHistos_run'+run+'.root'
+    file_path = settings.wwwdir_read+era+'/run_'+run+'/dqm_withMasking/rootfile/SiStripHitEffHistos_run'+run+'.root'
 else:
     file_path = settings.wwwdir_read+era+'/run_'+run+'/withMasking/rootfile/SiStripHitEffHistos_run'+run+'.root'
     if not os.path.isfile(file_path):

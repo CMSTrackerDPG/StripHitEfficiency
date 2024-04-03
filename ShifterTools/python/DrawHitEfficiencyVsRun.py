@@ -9,24 +9,83 @@ import ROOT
 ROOT.gROOT.SetBatch(True)
 ROOT.gStyle.SetOptTitle(1)
 
-def get_layer_name(layer):
+def get_layer_name(layer, nLayers):
   if layer<5: return 'TIB L'+str(layer)
   if layer>=5 and layer<11: return 'TOB L'+str(layer-4)
-  if layer>=11 and layer<14: return 'TID- D'+str(layer-10)
-  if layer>=14 and layer<17: return 'TID+ D'+str(layer-13)
-  if layer>=17 and layer<26: return 'TEC- W'+str(layer-16)
-  if layer>=26 and layer<35: return 'TEC+ W'+str(layer-25)
+
+  if nLayers==20: # Rings - merged endcap sides
+    if layer>=11 and layer<14: return 'TID R'+str(layer-10)
+    if layer>=14: return 'TEC R'+str(layer-13)
+
+  if nLayers==22: # Disks - merged endcap sides
+    if layer>=11 and layer<14: return 'TID D'+str(layer-10)
+    if layer>=14: return 'TEC D'+str(layer-13)
+
+  if nLayers==30: # Rings - separated endcap sides
+    if layer>=11 and layer<14: return 'TID- R'+str(layer-10)
+    if layer>=14 and layer<17: return 'TID+ R'+str(layer-13)
+    if layer>=17 and layer<24: return 'TEC- R'+str(layer-16)
+    if layer>=24 and layer<31: return 'TEC+ R'+str(layer-23)
+
+  if nLayers==34: # Disks - separated endcap sides
+    if layer>=11 and layer<14: return 'TID- D'+str(layer-10)
+    if layer>=14 and layer<17: return 'TID+ D'+str(layer-13)
+    if layer>=17 and layer<26: return 'TEC- D'+str(layer-16)
+    if layer>=26 and layer<35: return 'TEC+ D'+str(layer-25)
+
   return ''
 
-def get_short_layer_name(layer):
+def get_short_layer_name(layer, nLayers):
   if layer<5: return 'L'+str(layer)
   if layer>=5 and layer<11: return 'L'+str(layer-4)
-  if layer>=11 and layer<14: return 'D'+str(layer-10)
-  if layer>=14 and layer<17: return 'D'+str(layer-13)
-  if layer>=17 and layer<26: return 'W'+str(layer-16)
-  if layer>=26 and layer<35: return 'W'+str(layer-25)
+
+  if nLayers==20:
+    if layer>=11 and layer<14: return 'R'+str(layer-10)
+    if layer>=14 and layer<21: return 'R'+str(layer-13)
+
+  if nLayers==22:
+    if layer>=11 and layer<14: return 'D'+str(layer-10)
+    if layer>=14 and layer<23: return 'D'+str(layer-13)
+
+  if nLayers==30:
+    if layer>=11 and layer<14: return 'R'+str(layer-10)
+    if layer>=14 and layer<17: return 'R'+str(layer-13)
+    if layer>=17 and layer<24: return 'R'+str(layer-16)
+    if layer>=24 and layer<31: return 'R'+str(layer-23)
+
+  if nLayers==34:
+    if layer>=11 and layer<14: return 'D'+str(layer-10)
+    if layer>=14 and layer<17: return 'D'+str(layer-13)
+    if layer>=17 and layer<26: return 'D'+str(layer-16)
+    if layer>=26 and layer<35: return 'D'+str(layer-25)
+
   return ''
 
+
+def get_nlayers(directory, subdir):
+  nlayer = 0
+  # Get info from first run
+  for root, directories, files in os.walk(directory):
+    for rundir in sorted(directories):
+      if 'run_' in rundir:
+        run = rundir[4:]
+        filepath = directory+'/'+rundir+'/'+subdir+'/rootfile/SiStripHitEffHistos_run'+run+'.root'
+        if os.path.exists(filepath):
+
+          frun = TFile(filepath)
+          fdir = frun.GetDirectory('SiStripHitEff')
+          if subdir=='dqm_standard' or subdir=='dqm_withMasking':
+            hfound = fdir.Get('goodlayer_found')
+            htotal = fdir.Get('goodlayer_total')
+          else:
+            hfound = fdir.Get('found')
+            htotal = fdir.Get('all')
+
+          if htotal != None:
+            nlayer = htotal.GetNbinsX()
+            return nlayer
+
+  return nlayer
 
 
 def add_points(graph, directory, subdir, layer):
@@ -37,16 +96,28 @@ def add_points(graph, directory, subdir, layer):
   # List runs
   for root, directories, files in os.walk(directory):
     for rundir in sorted(directories):
-      if "run_" in rundir:
+      if 'run_' in rundir:
         # start to process run
         run = rundir[4:]
         #print "processing run ", run
 		
         # for efficiency
-        frun = TFile(directory+"/"+rundir+"/"+subdir+"/rootfile/SiStripHitEffHistos_run"+run+".root")
-        fdir = frun.GetDirectory("SiStripHitEff")
-        hfound = fdir.Get("found")
-        htotal = fdir.Get("all")
+        if not os.path.exists(directory+'/'+rundir+'/'+subdir):
+          print('  Skipping run', run, '. No subdir ', subdir)
+          continue
+        filepath = directory+'/'+rundir+'/'+subdir+'/rootfile/SiStripHitEffHistos_run'+run+'.root'
+        if not os.path.exists(filepath):
+          print('  File', filepath, 'does not exists')
+          continue
+
+        frun = TFile(filepath)
+        fdir = frun.GetDirectory('SiStripHitEff')
+        if subdir=='dqm_standard' or subdir=='dqm_withMasking':
+          hfound = fdir.Get('goodlayer_found')
+          htotal = fdir.Get('goodlayer_total')
+        else:
+          hfound = fdir.Get('found')
+          htotal = fdir.Get('all')
 
         if htotal == None: 
           print('  Missing histogram in file '+frun.GetName())
@@ -75,7 +146,7 @@ def add_points(graph, directory, subdir, layer):
 
 
 
-def draw_subdet(graphs, subdet):
+def draw_subdet(graphs, subdet, nLayers):
 
   l_min=0
   l_max=0
@@ -91,25 +162,55 @@ def draw_subdet(graphs, subdet):
     l_max=9
     subdet_str='TOB'
 
-  if subdet==3:
-    l_min=11
-    l_max=13
-    subdet_str='TIDm'
+  if nLayers==20 or nLayers==22:
+    if subdet==3:
+      l_min=11
+      l_max=13
+      subdet_str='TID'
+    if subdet==5 or subdet==6:
+      return
 
-  if subdet==4:
-    l_min=14
-    l_max=16
-    subdet_str='TIDp'
+  if nLayers==20:
+    if subdet==4:
+      l_min=14
+      l_max=19
+      subdet_str='TEC'
 
-  if subdet==5:
-    l_min=17
-    l_max=24
-    subdet_str='TECm'
+  if nLayers==22:
+    if subdet==4:
+      l_min=14
+      l_max=21
+      subdet_str='TEC'
 
-  if subdet==6:
-    l_min=26
-    l_max=33
-    subdet_str='TECp'
+  if nLayers==30 or nLayers==34:
+    if subdet==3:
+      l_min=11
+      l_max=13
+      subdet_str='TIDm'
+    if subdet==4:
+      l_min=14
+      l_max=16
+      subdet_str='TIDp'
+
+  if nLayers==30:
+    if subdet==5:
+      l_min=17
+      l_max=21
+      subdet_str='TECm'
+    if subdet==6:
+      l_min=23
+      l_max=29
+      subdet_str='TECp'
+
+  if nLayers==34:
+    if subdet==5:
+      l_min=17
+      l_max=24
+      subdet_str='TECm'
+    if subdet==6:
+      l_min=26
+      l_max=33
+      subdet_str='TECp'
 
   leg = TLegend(.92, .3, .99, .7)
   leg.SetHeader('')
@@ -121,7 +222,7 @@ def draw_subdet(graphs, subdet):
     else: graphs[layer-1].Draw('P')
     graphs[layer-1].SetMarkerColor(1+layer-l_min)
     min_y = graphs[layer-1].GetMinimum() if graphs[layer-1].GetMinimum()<min_y else min_y
-    leg.AddEntry(graphs[layer-1], ' '+get_short_layer_name(layer), 'p')
+    leg.AddEntry(graphs[layer-1], ' '+get_short_layer_name(layer, nLayers), 'p')
   
   graphs[l_min-1].SetTitle(subdet_str)
   haxis = graphs[l_min-1].GetHistogram()
@@ -152,7 +253,17 @@ subdir=str(sys.argv[2])
 
 graphs=[]
 
-for layer in range(1,35):
+nlayers = get_nlayers(settings.wwwdir_read+"/"+era, subdir)
+
+# Correct for differences in n bins between dqm and calibtree outputs
+if nlayers==21: nlayers=20
+if nlayers==23: nlayers=22
+if nlayers==31: nlayers=30
+if nlayers==35: nlayers=34
+
+print('Found', nlayers, 'layers')
+
+for layer in range(1,nlayers):
 
   print('producing trend plot for layer '+str(layer))
 
@@ -161,7 +272,7 @@ for layer in range(1,35):
 
   xlabels = add_points(eff_vs_run, settings.wwwdir_read+"/"+era, subdir, layer)
 
-  eff_vs_run.SetTitle(get_layer_name(layer))
+  eff_vs_run.SetTitle(get_layer_name(layer, nlayers))
   #eff_vs_run.GetXaxis().SetTitle("run number")
   eff_vs_run.GetYaxis().SetTitle("hit efficiency")
 
@@ -176,6 +287,6 @@ for layer in range(1,35):
 # Superimpose graphs for each subdet
 
 for subdet in range(1,7):
-  draw_subdet(graphs, subdet)
+  draw_subdet(graphs, subdet, nlayers)
 
 

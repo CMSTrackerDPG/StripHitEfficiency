@@ -71,30 +71,45 @@ StoreTrendPlotsOutput()
 
 ERA=$1
 echo "Era: $ERA"
+
+INPUT_TYPE="CALIBTREE"
+DIR=""
+if [[ "$2" != "" ]]
+then
+  INPUT_TYPE=$2
+fi
+if [[ "$INPUT_TYPE" == "DQM" ]]
+then
+  DIR="dqm_"
+fi
+
+echo "Input type: $INPUT_TYPE"
+echo "Associated directory: $DIR"
+
 #----------------------------------------------
 
 mkdir -p $wwwdir/$ERA/TrendPlots
 
 # produce and store trend plots
 
-echo "Using outputs from 'standard' directories"
-mkdir -p $wwwdir/$ERA/TrendPlots/standard
-python3 python/DrawHitEfficiencyVsRun.py $ERA standard
-StoreTrendPlotsOutput SiStripHitEffTrendPlot $ERA standard
+echo "Using outputs from '${DIR}standard' directories"
+mkdir -p $wwwdir/$ERA/TrendPlots/${DIR}standard
+python3 python/DrawHitEfficiencyVsRun.py $ERA ${DIR}standard
+StoreTrendPlotsOutput SiStripHitEffTrendPlot $ERA ${DIR}standard
 
-echo "Using outputs from 'withMasking' directories"
-mkdir -p $wwwdir/$ERA/TrendPlots/withMasking
-python3 python/DrawHitEfficiencyVsRun.py $ERA withMasking
-StoreTrendPlotsOutput SiStripHitEffTrendPlot $ERA withMasking
+echo "Using outputs from '${DIR}withMasking' directories"
+mkdir -p $wwwdir/$ERA/TrendPlots/${DIR}withMasking
+python3 python/DrawHitEfficiencyVsRun.py $ERA ${DIR}withMasking
+StoreTrendPlotsOutput SiStripHitEffTrendPlot $ERA ${DIR}withMasking
 
-echo "Using outputs from 'withMasking' directories for results vs inst. lumi."
+echo "Using outputs from '${DIR}withMasking' directories for results vs inst. lumi."
 mkdir -p $wwwdir/$ERA/TrendPlots/vsLumi
-python3 python/DrawHitEfficiencyVsLumi.py $ERA
+python3 python/DrawHitEfficiencyVsLumi.py $ERA ${DIR}withMasking
 StoreTrendPlotsOutput SiStripHitEffTrendPlotVsLumi $ERA vsLumi
 
-echo "Using outputs from 'withMasking' directories for results vs pile-up"
+echo "Using outputs from '${DIR}withMasking' directories for results vs pile-up"
 mkdir -p $wwwdir/$ERA/TrendPlots/vsPU
-python3 python/DrawHitEfficiencyVsLumi.py $ERA 1
+python3 python/DrawHitEfficiencyVsLumi.py $ERA ${DIR}withMasking 1
 StoreTrendPlotsOutput SiStripHitEffTrendPlotVsPU $ERA vsPU
 
 

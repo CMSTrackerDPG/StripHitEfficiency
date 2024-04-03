@@ -61,6 +61,41 @@ EOF
     mv -f index_new.html index.html
 }
 
+CreateIndexSeparatedSides ()
+{
+    LASTUPDATE=`date`
+
+            cat >> index_new.html  << EOF
+<TR> <TD align=center> <a href="SiStripHitEffTKMapBad.png"><img src="SiStripHitEffTKMapBad.png"hspace=5 vspace=5 border=0 style="width: 90%" ALT="SiStripHitEffTKMapBad.png"></a>
+  <br> SiStripHitEffTKMapBad.png </TD>
+EOF
+
+            cat >> index_new.html  << EOF
+  <TD align=center> <a href="SiStripHitEffTKMap.png"><img src="SiStripHitEffTKMap.png"hspace=5 vspace=5 border=0 style="width: 90%" ALT="SiStripHitEffTKMap.png"></a>
+  <br> SiStripHitEffTKMap.png </TD> </TR>
+EOF
+
+            cat >> index_new.html  << EOF
+<TR> <TD align=center> <a href="SiStripHitEffTKMapEff.png"><img src="SiStripHitEffTKMapEff.png"hspace=5 vspace=5 border=0 style="width: 90%" ALT="SiStripHitEffTKMapEff.png"></a>
+  <br> SiStripHitEffTKMapEff.png </TD>
+EOF
+
+            cat >> index_new.html  << EOF
+  <TD align=center> <a href="Summary.png"><img src="Summary.png"hspace=5 vspace=5 border=0 style="width: 90%" ALT="Summary.png"></a>
+  <br> Summary.png </TD> </TR>
+EOF
+
+            cat >> index_new.html  << EOF
+<TR> <TD align=center> <a href="Summary_separatedSides.png"><img src="Summary_separatedSides.png"hspace=5 vspace=5 border=0 style="width: 90%" ALT="Summary_separatedSides.png"></a>
+  <br> Summary_separatedSides.png </TD> </TR>
+EOF
+
+    cat template/template_index_foot.html | sed -e "s@insertDate@$LASTUPDATE@g" >> index_new.html
+
+    mv -f index_new.html index.html
+}
+
+
 
 # Storing outputs into www directory
 StoreOutputs ()
@@ -128,6 +163,13 @@ StoreOutputs ()
   cat template/template_index_header.html | sed -e "s@insertPageName@Validation Plots --- Hit Efficiency Study --- Tracker Maps@g" > index_new.html
   CreateIndex
 
+  if [ -f Summary_separatedSides.png ]
+  then
+    mv "Summary_separatedSides.png" "$wwwdir/$ERA/run_$runnumber/$analysistype/Plots/Summary_separatedSides.png"
+      cat template/template_index_header.html | sed -e "s@insertPageName@Validation Plots --- Hit Efficiency Study --- Tracker Maps@g" > index_new.html
+    CreateIndexSeparatedSides
+  fi
+
   mv index.html "$wwwdir/$ERA/run_$runnumber/$analysistype/Plots"
   mv "SiStripHitEffTKMapBad.png" "$wwwdir/$ERA/run_$runnumber/$analysistype/Plots"
   mv "SiStripHitEffTKMap.png"    "$wwwdir/$ERA/run_$runnumber/$analysistype/Plots"
@@ -186,23 +228,29 @@ MakeShifterSummary ()
 
   cat template/template_index_header.html | sed -e "s@insertPageName@Validation Plots --- Hit Efficiency Study --- Tracker Maps@g" > index_new.html
 
+  DIR=""
+  if [[ "$INPUT_TYPE" == "DQM" ]]
+  then
+    DIR="dqm_"
+  fi
+
   cat >> index_new.html  << EOF
-<TR> <TD align=center> <a href="../standard/Plots/SiStripHitEffTKMapBad.png"><img src="../standard/Plots/SiStripHitEffTKMapBad.png"hspace=5 vspace=5 border=0 style="width: 90%" ALT="SiStripHitEffTKMapBad.png"></a> 
+<TR> <TD align=center> <a href="../standard/Plots/SiStripHitEffTKMapBad.png"><img src="../${DIR}standard/Plots/SiStripHitEffTKMapBad.png"hspace=5 vspace=5 border=0 style="width: 90%" ALT="SiStripHitEffTKMapBad.png"></a> 
   <br> Inefficient modules masked in the other plots</TD>
 EOF
 
   cat >> index_new.html  << EOF
-  <TD align=center> <a href="../withMasking/Plots/SiStripHitEffTKMap.png"><img src="../withMasking/Plots/SiStripHitEffTKMap.png"hspace=5 vspace=5 border=0 style="width: 90%" ALT="SiStripHitEffTKMap.png"></a> 
+  <TD align=center> <a href="../withMasking/Plots/SiStripHitEffTKMap.png"><img src="../${DIR}withMasking/Plots/SiStripHitEffTKMap.png"hspace=5 vspace=5 border=0 style="width: 90%" ALT="SiStripHitEffTKMap.png"></a> 
   <br> Remaining inefficient modules </TD> </TR> 
 EOF
             
   cat >> index_new.html  << EOF
-<TR> <TD align=center> <a href="../withMasking/Plots/SiStripHitEffTKMapEff.png"><img src="../withMasking/Plots/SiStripHitEffTKMapEff.png"hspace=5 vspace=5 border=0 style="width: 90%" ALT="SiStripHitEffTKMapEff.png"></a> 
+<TR> <TD align=center> <a href="../withMasking/Plots/SiStripHitEffTKMapEff.png"><img src="../${DIR}withMasking/Plots/SiStripHitEffTKMapEff.png"hspace=5 vspace=5 border=0 style="width: 90%" ALT="SiStripHitEffTKMapEff.png"></a> 
   <br> Efficiency map </TD>
 EOF
             
   cat >> index_new.html  << EOF
-  <TD align=center> <a href="../withMasking/Plots/Summary.png"><img src="../withMasking/Plots/Summary.png"hspace=5 vspace=5 border=0 style="width: 90%" ALT="Summary.png"></a> 
+  <TD align=center> <a href="../withMasking/Plots/Summary.png"><img src="../${DIR}withMasking/Plots/Summary.png"hspace=5 vspace=5 border=0 style="width: 90%" ALT="Summary.png"></a> 
   <br> Efficiency per layer </TD> </TR> 
 EOF
 
@@ -248,7 +296,7 @@ PU_CLEANING=true # REMOVE files with large PU variations. Important due to bias 
 
 # Default values for other options
 # Run period
-ERA="GR22"
+ERA="GR23"
 # nb of files to be processed for the run
 NFILES="4" # Can be "all" in the DQM workflow
 
@@ -356,10 +404,15 @@ process.alcasiStripHitEfficiencyHarvester.isAtPCL = cms.bool(False)\n"
   cat run_${runnumber}_dqm.log | awk 'BEGIN{doprint=0}{if(match($0,"occupancy")!=0) doprint=1; if(match($0,"efficiency")!=0) doprint=1; if(match($0,"modules")!=0) doprint=1; if(match($0,"%MSG")!=0) {doprint=0;} if(match($0,"tempfilename")!=0) {doprint=0;} if(match($0,"Global Info")!=0) {doprint=0;} if(match($0,"DQMFileSaver::globalEndRun")!=0) {doprint=0;} if(match($0,"MessageLogger")!=0) {doprint=0;} if(doprint==1) print $0}' > EfficiencyResults_$runnumber.txt
 
   mv SiStripHitEffTKMapBad_NEW.png SiStripHitEffTKMapBad.png 
+  rm SiStripHitEffTKMapBad_NEW.root
   mv SiStripHitEffTKMap_NEW.png SiStripHitEffTKMap.png
+  rm SiStripHitEffTKMap_NEW.root
   mv SiStripHitEffTKMapEff_NEW.png SiStripHitEffTKMapEff.png
+  rm SiStripHitEffTKMapEff_NEW.root
   mv SiStripHitEffTKMapDen_NEW.png SiStripHitEffTKMapDen.png
+  rm SiStripHitEffTKMapDen_NEW.root
   mv SiStripHitEffTKMapNum_NEW.png SiStripHitEffTKMapNum.png
+  rm SiStripHitEffTKMapNum_NEW.root
   rm BadModules_NEW.log
   mv promptCalibConditions.db dbfile.db
   rm Summary.root
@@ -370,7 +423,20 @@ process.alcasiStripHitEfficiencyHarvester.isAtPCL = cms.bool(False)\n"
   echo "Output format conversion ..."
   python3 python/ConvertDQMToCalibTreeOutput.py DQM_V0001_R000${runnumber}__Express__PCLTest__ALCAPROMPT.root
 
-  StoreOutputs dqm
+  StoreOutputs dqm_standard
+
+  echo "Output format conversion ..."
+  python3 python/ConvertDQMToCalibTreeOutput-InEffMasking.py $wwwdir/$ERA/run_$runnumber/$analysistype/rootfile/DQM_V0001_R000${runnumber}__Express__PCLTest__ALCAPROMPT.root
+  # creating maps
+  touch InefficientModules_${runnumber}.txt # all inefficient modules masked by definition
+  print_TrackerMap InefficientModules_${runnumber}.txt "Inefficient Modules" SiStripHitEffTKMapBad.png
+  print_TrackerMap ModulesInefficiencies.txt "Detector Inefficiency" SiStripHitEffTKMap.png 4500 False False 0. 1.
+  print_TrackerMap ModulesEfficiencies.txt "SiStrip Hit Efficiency Map" SiStripHitEffTKMapEff.png 4500 False False 0.9 1.0
+  rm ModulesInefficiencies.txt
+  rm ModulesEfficiencies.txt
+
+  StoreOutputs dqm_withMasking
+
 fi
 # end of dqm workflow
 
@@ -560,7 +626,7 @@ MakeShifterSummary
 
 ### produce and store trend plots
 ##################################
-./TrendPlots.sh $ERA
+./TrendPlots.sh $ERA $INPUT_TYPE 
 
 
 echo "Done."

@@ -11,17 +11,60 @@ ROOT.gROOT.SetBatch(True)
 ROOT.gStyle.SetOptTitle(1)
 
 
-def get_layer_name(layer):
+def get_layer_name(layer, nLayers):
   if layer<5: return 'TIB L'+str(layer)
   if layer>=5 and layer<11: return 'TOB L'+str(layer-4)
-  if layer>=11 and layer<14: return 'TID- D'+str(layer-10)
-  if layer>=14 and layer<17: return 'TID+ D'+str(layer-13)
-  if layer>=17 and layer<26: return 'TEC- W'+str(layer-16)
-  if layer>=26 and layer<35: return 'TEC+ W'+str(layer-25)
+
+  if nLayers==20: # Rings - merged endcap sides
+    if layer>=11 and layer<14: return 'TID R'+str(layer-10)
+    if layer>=14: return 'TEC R'+str(layer-13)
+
+  if nLayers==22: # Disks - merged endcap sides
+    if layer>=11 and layer<14: return 'TID D'+str(layer-10)
+    if layer>=14: return 'TEC D'+str(layer-13)
+
+  if nLayers==30: # Rings - separated endcap sides
+    if layer>=11 and layer<14: return 'TID- R'+str(layer-10)
+    if layer>=14 and layer<17: return 'TID+ R'+str(layer-13)
+    if layer>=17 and layer<24: return 'TEC- R'+str(layer-16)
+    if layer>=24 and layer<31: return 'TEC+ R'+str(layer-23)
+
+  if nLayers==34: # Disks - separated endcap sides
+    if layer>=11 and layer<14: return 'TID- D'+str(layer-10)
+    if layer>=14 and layer<17: return 'TID+ D'+str(layer-13)
+    if layer>=17 and layer<26: return 'TEC- D'+str(layer-16)
+    if layer>=26 and layer<35: return 'TEC+ D'+str(layer-25)
+
   return ''
 
 
-def add_points(graph, directory, layer, usePU):
+def get_nlayers(directory, subdir):
+  nlayer = 0
+  # Get info from first run
+  for root, directories, files in os.walk(directory):
+    for rundir in sorted(directories):
+      if 'run_' in rundir:
+        run = rundir[4:]
+        filepath = directory+'/'+rundir+'/'+subdir+'/rootfile/SiStripHitEffHistos_run'+run+'.root'
+        if os.path.exists(filepath):
+
+          frun = TFile(filepath)
+          fdir = frun.GetDirectory('SiStripHitEff')
+          if subdir=='dqm_standard' or subdir=='dqm_withMasking':
+            hfound = fdir.Get('goodlayer_found')
+            htotal = fdir.Get('goodlayer_total')
+          else:
+            hfound = fdir.Get('found')
+            htotal = fdir.Get('all')
+
+          if htotal != None:
+            nlayer = htotal.GetNbinsX()
+            return nlayer
+
+  return nlayer
+
+
+def add_points(graph, directory, subdir, layer, usePU):
 
   ipt=graph.GetN()
 
@@ -37,20 +80,32 @@ def add_points(graph, directory, layer, usePU):
         lumi_err=0
 
         # Get informations for a given run
-        frun = TFile(directory+"/"+rundir+"/withMasking/rootfile/SiStripHitEffHistos_run"+run+".root")
-        fdir = frun.GetDirectory("SiStripHitEff")        
+        if not os.path.exists(directory+'/'+rundir+'/'+subdir):
+          print('  Skipping run', run, '. No subdir ', subdir)
+          continue
+        filepath = directory+'/'+rundir+'/'+subdir+'/rootfile/SiStripHitEffHistos_run'+run+'.root'
+        if not os.path.exists(filepath):
+          print('  File', filepath, 'does not exists')
+          continue
+
+        frun = TFile(filepath)
+        fdir = frun.GetDirectory('SiStripHitEff')        
  
         # for efficiency
-        hfound = fdir.Get("found")
-        htotal = fdir.Get("all")
+        if subdir=='dqm_standard' or subdir=='dqm_withMasking':
+          hfound = fdir.Get('goodlayer_found')
+          htotal = fdir.Get('goodlayer_total')
+        else:
+          hfound = fdir.Get('found')
+          htotal = fdir.Get('all')
 
         if htotal == None:
           print('  Missing histogram in file '+frun.GetName())
           continue
 
         # lumi
-        if usePU==0 : hlumi = fdir.Get("instLumi")
-        else : hlumi = fdir.Get("PU")
+        if usePU==0 : hlumi = fdir.Get('instLumi')
+        else : hlumi = fdir.Get('PU')
         if hlumi == None:
           print('  Missing lumi/pu histogram in file '+frun.GetName())
           continue
@@ -81,15 +136,18 @@ def add_points(graph, directory, layer, usePU):
 
 
 if len(sys.argv)<2:
-  print("Syntax is:  DrawHitEfficiencyVsLumi.py  ERA [usePU] ")
-  print("  example:  DrawHitEfficiencyVsLumi.py GR17 [1]")
+  print("Syntax is:  DrawHitEfficiencyVsLumi.py  ERA [subdir] [usePU] ")
+  print("  example:  DrawHitEfficiencyVsLumi.py GR17 [subdir] [1]")
   exit() 
 
 era=str(sys.argv[1])
 
+subdir='withMasking'
+if len(sys.argv)>=3: subdir=sys.argv[2]
+
 # option to show results as a function of pu instead of inst. lumi.
 usePU=0
-if len(sys.argv)>=3: usePU=int(sys.argv[2])
+if len(sys.argv)>=4: usePU=int(sys.argv[3])
 
 
 #---------------------
@@ -100,15 +158,25 @@ if len(sys.argv)>=3: usePU=int(sys.argv[2])
 graphs=[]
 c1 = TCanvas()
 
-for layer in range(1,35):
+nlayers = get_nlayers(settings.wwwdir_read+"/"+era, subdir)
+
+# Correct for differences in n bins between dqm and calibtree outputs
+if nlayers==21: nlayers=20
+if nlayers==23: nlayers=22
+if nlayers==31: nlayers=30
+if nlayers==35: nlayers=34
+
+print('Found', nlayers, 'layers')
+
+for layer in range(1,nlayers+1):
 
   print('producing trend plot for layer '+str(layer))
 
   graphs.append( TGraphAsymmErrors() )
   eff_vs_lumi = graphs[-1]
-  xlabels = add_points(eff_vs_lumi, settings.wwwdir_read+"/"+era, layer, usePU)
+  xlabels = add_points(eff_vs_lumi, settings.wwwdir_read+"/"+era, subdir, layer, usePU)
 
-  eff_vs_lumi.SetTitle(get_layer_name(layer))
+  eff_vs_lumi.SetTitle(get_layer_name(layer, nlayers))
   eff_vs_lumi.GetYaxis().SetTitle("hit efficiency")
   if usePU==0 : eff_vs_lumi.GetXaxis().SetTitle("inst. lumi [x10^{30}]")
   else : eff_vs_lumi.GetXaxis().SetTitle("PU")
