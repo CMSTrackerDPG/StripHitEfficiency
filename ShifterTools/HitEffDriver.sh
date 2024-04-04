@@ -286,8 +286,8 @@ fi
 # Hard-coded options:
 #--------------------
 # DQM or Calibtree worklow
-#INPUT_TYPE="DQM"
-INPUT_TYPE="CALIBTREE"
+INPUT_TYPE="DQM"
+#INPUT_TYPE="CALIBTREE"
 # Used in DQM workflow:
 GLOBALTAG_ERA="Run3"
 # Used in Calibtree workflow:
@@ -296,9 +296,9 @@ PU_CLEANING=true # REMOVE files with large PU variations. Important due to bias 
 
 # Default values for other options
 # Run period
-ERA="GR23"
+ERA="GR24"
 # nb of files to be processed for the run
-NFILES="4" # Can be "all" in the DQM workflow
+NFILES="100" # Can be "all" in the DQM workflow
 
 # Setting options
 while getopts ":n:e:" OPT
@@ -550,9 +550,9 @@ then
     FILEID=`echo $file | awk -F'_' '{print $3} '| sed -e 's/.root//'`
     if [[ "$FILEID" == "0" ]]
     then
-      fullpathfilelist+="'root://eoscms//eos/cms$EOSpath/$ERA/calibTree_$runnumber.root',"
+      fullpathfilelist+="'root://eoscms//eos/cms$EOSpath/$ERA/calibtree_$runnumber.root',"
     else
-      fullpathfilelist+="'root://eoscms//eos/cms$EOSpath/$ERA/calibTree_${runnumber}_$FILEID.root',"
+      fullpathfilelist+="'root://eoscms//eos/cms$EOSpath/$ERA/calibtree_${runnumber}_$FILEID.root',"
     fi
   done
   fullpathfilelist=`echo $fullpathfilelist | sed 's/.$//'`

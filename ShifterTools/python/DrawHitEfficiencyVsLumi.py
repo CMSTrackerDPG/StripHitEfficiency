@@ -111,7 +111,7 @@ def add_points(graph, directory, subdir, layer, usePU):
           continue
         lumi = hlumi.GetMean()
         lumi_err = hlumi.GetRMS()
-        #print "lumi (avg+/-rms): ", lumi, "+/-", lumi_err
+        #print('lumi (avg+/-rms): ', lumi, '+/-', lumi_err)
 
         # efficiency for a given layer
         found = hfound.GetBinContent(layer)
@@ -121,7 +121,7 @@ def add_points(graph, directory, subdir, layer, usePU):
         #print run, eff, lumi, lumi_err
 
         # remove run without lumi informations
-        if lumi>1 :
+        if lumi>0 :
           eff_vs_lumi.SetPoint(ipt, lumi, eff)
           low = TEfficiency.Bayesian(total, found, .683, 1, 1, False)
           up = TEfficiency.Bayesian(total, found, .683, 1, 1, True);

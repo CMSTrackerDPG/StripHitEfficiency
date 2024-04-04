@@ -14,7 +14,7 @@ process.source = cms.Source("EmptyIOVSource",
     interval = cms.uint64(1)
 )
 
-process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(1))
+process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(-1))
 
 process.SiStripHitEff = cms.EDAnalyzer("SiStripHitEffFromCalibTree",
     CalibTreeFilenames = cms.untracked.vstring('root://eoscms//eos/cms/newfilelocation'),
