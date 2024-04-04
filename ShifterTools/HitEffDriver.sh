@@ -3,7 +3,7 @@
 ### FUNCTIONS AND VARIABLE DEFINITION
 ######################################
 
-wwwdir="/afs/cern.ch/cms/tracker/sistrvalidation/WWW/CalibrationValidation/HitEfficiency"
+wwwdir="/eos/cms/store/group/tracker-cctrack/www/HitEfficiency"
 
 #CreateIndex ()
 #{

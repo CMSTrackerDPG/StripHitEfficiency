@@ -1,7 +1,7 @@
 #!/bin/bash -f
 
 
-wwwdir="/afs/cern.ch/cms/tracker/sistrvalidation/WWW/CalibrationValidation/HitEfficiency"
+wwwdir="/eos/cms/store/group/tracker-cctrack/www/HitEfficiency/"
 
 CreateTrendPlotsIndex()
 {
