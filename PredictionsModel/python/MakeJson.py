@@ -12,7 +12,7 @@ def ReadJSONFile(name):
                 if not d["attributes"]["luminosity_detected"]:
                     #print('Warning: 2 beams but no lumi detected for bx', d["attributes"]["bunch_number"])
                     nwarning+=1
-                tab.append(d["attributes"]["bunch_number"])
+                tab.append(d["attributes"]["bunch_number"]+1)
 
     print(len(tab), 'colliding bunches found')
     if nwarning>0:
@@ -20,31 +20,27 @@ def ReadJSONFile(name):
     return tab
 
 def PairMakerFromTab(tab):
+    begin = tab[0]
+    previous = tab[0]
     train=[]
     NewTrain=True
     AtLeastTwoTrains=False
     for i in range(0,len(tab)):
-        if NewTrain==False:
-            if tab[i]==current+1:
-                current=tab[i]
-            else:
-                end=current
-                NewTrain=True
-                if AtLeastTwoTrains:
-                    train.append([begin,end+1])
-                else:
-                    train.append([begin+1,end+1])
-                AtLeastTwoTrains=True
-        else:
-            begin=tab[i]
-            current=begin
-            NewTrain=False
+        current=tab[i]
+        #if current-previous==1: # in train
+            #print('in train', current)
+        if current>begin and current-previous>1: # change of train
+            end=previous
+            #print('end train', end)
+            train.append([begin,end])
+            begin=current
+            #print('new train', current)
+            AtLeastTwoTrains=True
+        previous = current
+        # Special treatment for last bx
         if i==len(tab)-1:
-            end=tab[i]
-            if AtLeastTwoTrains:
-                train.append([begin,end+1])
-            else:
-                train.append([begin+1,end+1])
+            end=current
+            train.append([begin,end])
 
     return train
     
@@ -58,8 +54,11 @@ tab=ReadJSONFile(str(sys.argv[1]))
 #print( tab )
 train = PairMakerFromTab(tab)
 #print( train )
-train_string=str(train)
-#print( train_string )
+
+fout=open("fill_allbx.json","w+")
+fout.write(str(tab))
+fout.close
+
 fout=open("fill.json","w+")
-fout.write(train_string)
+fout.write(str(train))
 fout.close

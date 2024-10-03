@@ -63,8 +63,14 @@ class EfficiencyCalculator:
         #print('setting low pile-up offset...')
         ifileOffset = TFile(offsetpath)
         c_Offset = ifileOffset.Get("c1")
+        if c_Offset == None:
+            print("Canvas for efficiency at PU=0 not set. Could not retrieve info.")
+            return
         ROOT.gROOT.cd()
-        h_Offset = c_Offset.GetPrimitive("pad").GetPrimitive("origin").Clone()
+        try:
+           h_Offset = c_Offset.GetPrimitive("pad").GetPrimitive("origin").Clone()
+        except:
+           h_Offset = c_Offset.GetPrimitive("origin").Clone()
         self.__offset = h_Offset
         ifileOffset.Close()
 
@@ -141,6 +147,7 @@ class EfficiencyCalculator:
         #print('computing average efficiency over orbit for layer: ',layer)
         idx=0
         value=0.
+        # Assume a total recovery of efficiency between trains
         for train in self.__fillscheme:
             for bx1 in range(train[0],train[1]+1):
                 value+=(self.compute_eff_layer(train,layer,True))[bx1]
@@ -157,30 +164,49 @@ class EfficiencyCalculator:
             print('Error: empty fill scheme')
             return 0
         if self.__deadtime == 0:
-            print('Error: deadtime not set for layer', layer)
+            print('Error: deadtime not set for layer', self.__layer)
             return 0
  
         # Average the impact of the 'historical' function on each bx of the orbit
-        # Assumption is made that the recovery is total between 2 trains and that the space between bunches in a train is 25ns
+        # Assumption is made that the space between bunches in a train is 25ns
         idx=0
         value=0.
         efficiency = 0.
         fill_factor = 1.
+        last_train_bx = 0
 
         for train in self.__fillscheme:
-            index = 0
+            index = 0.
+
+            # treat cases where previous train is too close for complete recover
+            if last_train_bx!=0 and train[0]-last_train_bx<self.__deadtime:
+                efficiency=self.__deadtime
+                for bx in range(last_train_bx+1, train[0]+1):
+                    efficiency -=1
+                    if efficiency<0:
+                        print('Warning: deadtime can not be <0')
+                        efficiency=0.
+                    index = efficiency
+            #print('Start train', efficiency, index)
+
+            # treat loss of efficiency in a train
             for bx in range(train[0],train[1]+1):
                 if float(index) < self.__deadtime:
                     efficiency=index
                 if float(index) >= self.__deadtime:
                     efficiency=self.__deadtime
+                #print(idx, efficiency)
                 value+=efficiency
                 index+=1
                 idx+=1
+                last_train_bx = bx
         if idx>0:
-            fill_factor = value/idx
+            fill_factor = value/idx/self.__deadtime
         else:
             print('Warning: no bx found in fill scheme')
+
+        #print('Fill factor, layer ', self.__layer, '{:.4}'.format(fill_factor))
+        #print(self.__deadtime, idx, value)
 
         return fill_factor
 
@@ -222,15 +248,15 @@ class EfficiencyCalculator:
         total_weight = 0.
         if self.__pileup_histo.GetNbinsX() < 2:
             pu = self.__pileup
-            print(Offset_value, HIPprob_value, pu, rew_fact, fill_factor)
-            self.__avgefflayer = Offset_value - HIPprob_value * pu * rew_fact * fill_factor
+            #print(Offset_value, HIPprob_value, pu, rew_fact, fill_factor)
+            self.__avgefflayer = Offset_value - HIPprob_value * pu * rew_fact * fill_factor * self.__deadtime
         else:
             for ibin in range(1, self.__pileup_histo.GetNbinsX()+1):
                 if self.__pileup_histo.GetBinContent(ibin) >= 1:
                     pu = self.__pileup_histo.GetBinCenter(ibin)
                     weight = self.__pileup_histo.GetBinContent(ibin)
                     #print(ibin, pu, weight)
-                    avg_eff += weight * (Offset_value - HIPprob_value * pu * rew_fact * fill_factor)
+                    avg_eff += weight * (Offset_value - HIPprob_value * pu * rew_fact * fill_factor * self.__deadtime)
                     total_weight += weight
             if total_weight!=0 :
                 avg_eff /= total_weight

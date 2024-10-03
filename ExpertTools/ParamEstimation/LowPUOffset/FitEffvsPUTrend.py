@@ -1,50 +1,45 @@
+import sys
 import ctypes
 from ROOT import TCanvas, TPad, TGraph, TGraphErrors, TGraphAsymmErrors, TFile, TH1F, TLine, TLegend, TMath, TFitResult, TFitResultPtr, TF1, TAxis, TLatex, TGaxis, TLegend, TLegendEntry
-import sys
-
-
-# Read arguments
-
-if len(sys.argv)<2:
-  print('Syntax is: python3 FILE [XMIN XMAX] ')
-  exit() 
-
-filename=str(sys.argv[1])
-xmin = 0
-xmax = 100
-if len(sys.argv)>=3:
-  xmin=str(sys.argv[2])
-if len(sys.argv)>=4:
-  xmax=str(sys.argv[3])
-
 
 layer_names=[]
 
+### Read argument
 
-# Read file data
+fillnum = '8822'
+# the fill number can be provided to the script as an argument
+if len(sys.argv)>1:
+    fillnum=sys.argv[1]
 
+
+### Get and fit efficiency vs PU for each layer
+
+filename = 'SiStripHitEffHistos_fill'+fillnum+'.root'
 f = TFile(filename)
 d = f.Get('SiStripHitEff')
 c = TCanvas()
-func = TF1('line', '[0]+[1]*x', 0, 100)
+run = 'fill'
+run += filename.split('/')[-1].split('_fill')[-1].replace('.root','')
 
 g_offset = TGraphErrors()
 g_coeff = TGraphErrors()
 
-h_all = d.Get('all')
-nlayer = h_all.GetNbinsX()-1
-print('Found', nlayer, 'layers')
+#nlayer = 20 or 22
+g = d.Get('eff_all')
+nlayer = g.GetN() # for file made from DQM files
+if nlayer==21 or nlayer==23: # for file made from calibTree files
+    nlayer = g.GetN()-1
+print( nlayer, 'layers')
 
 offset = []
 offset_err = []
 coeff = []
 coeff_err = []
-# Loop over layers
 for i in range(1,nlayer+1):
     g_clean = TGraphAsymmErrors()
     g = d.Get('effVsPU_layer'+str(i))
-    layername = d.Get('resol_layer_'+str(i)).GetTitle()
-    layer_names.append(layername)
+    hfound = d.Get('layerfound_vsPU_layer_'+str(i))
+    if hfound: layer_names.append(hfound.GetTitle())
     ipt = 0
     if g:
         x = ctypes.c_double(0.0)
@@ -54,15 +49,19 @@ for i in range(1,nlayer+1):
             if y.value>0.01:
                 g_clean.SetPoint(ipt,x.value,y.value)
                 g_clean.SetPointError(ipt, 0, 0, g.GetErrorYlow(ipu), g.GetErrorYhigh(ipu))
-                #print(ipu, ipt, x.value,y.value, g.GetErrorYlow(ipu), g.GetErrorYhigh(ipu))
+                #print ipu, ipt, x.value,y.value, g.GetErrorYlow(ipu), g.GetErrorYhigh(ipu)
                 ipt+=1
     
         if g_clean.GetN()>2:
             g_clean.SetMarkerStyle(20)
             g_clean.Draw('AP')
     
-            r = g_clean.Fit('line', 'SQR')
-            print('layer', layername)
+    
+            fct = TF1('fct', '[0]+x*[1]', 0, 100)
+            fct.SetParameter(0, 1)
+            fct.SetParameter(1, -0.001)
+            #fct.SetParLimits(1, -0.03, 0)
+            r = g_clean.Fit('fct', 'SQ')
             print('fit result: ',r.Chi2(),r.Parameter(0),'+/-',r.ParError(0),r.Parameter(1),'+/-',r.ParError(1))
             c.Print('layer'+str(i)+'.png')
         
@@ -70,22 +69,22 @@ for i in range(1,nlayer+1):
             offset_err.append(r.ParError(0))
             coeff.append(r.Parameter(1)/0.001)
             coeff_err.append(r.ParError(1)/0.001)
-
         else:
+
             offset.append(0)
             offset_err.append(0)
             coeff.append(0)
             coeff_err.append(0)
-
     else:
         offset.append(0)
         offset_err.append(0)
         coeff.append(0)
         coeff_err.append(0)
 
+print(layer_names)
 
 
-## Draw like 2018 public results
+### Draw like 2018 public results
 
 c1 = TCanvas("c1", "c1",0,53,700,500)
 c1.SetHighLightColor(2);
@@ -94,14 +93,15 @@ c1.SetFillColor(0);
 c1.SetBorderMode(0);
 c1.SetBorderSize(2);
 c1.SetFrameBorderMode(0);
+#c1.cd()
 
-h1 = TH1F("Offset", "", nlayer, 0, nlayer)
+h1 = TH1F("origin", "", nlayer, 0, nlayer)
 for i in range(1,nlayer+1):
     h1.SetBinContent(i, offset[i-1])
     h1.SetBinError(i, offset_err[i-1])
-    h1.GetXaxis().SetBinLabel(i, layer_names[i-1])
-h1.SetMinimum(0.99)
-h1.SetMaximum(1.00)
+    if i<len(layer_names)+1: h1.GetXaxis().SetBinLabel(i, layer_names[i-1])
+h1.SetMinimum(0.97)#0.97
+h1.SetMaximum(1.01)#1.01
 h1.SetStats(0)
 h1.SetMarkerStyle(8)
 h1.SetMarkerColor(2)
@@ -128,14 +128,14 @@ hmax = h1.GetMaximum()
 
 hatched1 = TH1F("hatched1","",nlayer,0,nlayer)
 hatched1.SetBinContent(10, hmax)
-hatched1.SetBinContent(22, hmax)
+hatched1.SetBinContent(nlayer, hmax)
 hatched1.SetFillColor(1)
 #hatched1.SetFillStyle(3004)
 hatched1.SetFillStyle(3354)
 hatched1.SetLineColor(0);
 hatched1.Draw("same hist")
 
-overlay = TPad("overlay", "",0,0,1,1)
+overlay = TPad("pad", "",0,0,1,1)
 overlay.SetFillColor(0)
 overlay.SetFillStyle(4000)
 overlay.SetBorderMode(0)
@@ -145,13 +145,13 @@ overlay.SetFrameBorderMode(0)
 overlay.Draw()
 overlay.cd()
 
-h2 = TH1F("Slope", "", nlayer, 0, nlayer)
+h2 = TH1F("slope", "", nlayer, 0, nlayer)
 for i in range(1,nlayer+1):
     h2.SetBinContent(i, coeff[i-1])
     h2.SetBinError(i, coeff_err[i-1])
-    h2.GetXaxis().SetBinLabel(i, layer_names[i-1])
-h2.SetMinimum(-0.3)
-h2.SetMaximum(0)
+    if i<len(layer_names)+1: h2.GetXaxis().SetBinLabel(i, layer_names[i-1])
+h2.SetMinimum(-0.3)#-0.3
+h2.SetMaximum(0.)#0
 h2.SetStats(0)
 h2.SetMarkerStyle(8)
 h2.SetMarkerColor(4)
@@ -228,33 +228,32 @@ leg.Draw()
    
 #overlay.Modified()
 #c1.cd()
-tex1 = TLatex(0.9,0.92,"13 TeV")
+tex1 = TLatex(0.9,0.92,"13.6 TeV")
 tex1.SetNDC()
 tex1.SetTextAlign(31)
 tex1.SetTextFont(42)
 tex1.SetTextSize(0.06)
 tex1.SetLineWidth(2)
-tex1.Draw()
+#tex1.Draw()
 tex2 = TLatex(0.1,0.92,"CMS")
 tex2.SetNDC()
 tex2.SetTextFont(61)
 tex2.SetTextSize(0.075)
 tex2.SetLineWidth(2)
-tex2.Draw()
-tex3 = TLatex(0.22,0.92,"Preliminary")# 2018")
+#tex2.Draw()
+tex3 = TLatex(0.22,0.92,"Preliminary 2023")
 tex3.SetNDC()
 tex3.SetTextFont(52)
 tex3.SetTextSize(0.057)
 tex3.SetLineWidth(2)
-tex3.Draw()
+#tex3.Draw()
 c1.Modified()
 c1.cd()
-c1.Print("EffVsPU_params.png")
+c1.Print("plot.png")
 
 
 # Save results
-
-fout = TFile('PUfit.root', 'recreate')
+fout = TFile('PUfit_'+run+'.root', 'recreate')
 c1.Write()
 h1.Write()
 h2.GetXaxis().SetLabelSize(0.04)
@@ -265,4 +264,3 @@ h2.GetYaxis().SetTitleSize(0.05)
 h2.GetYaxis().SetTitle("#Deltaefficiency /#DeltaPU ( x10^{-3})")
 h2.Write()
 fout.Close()
-

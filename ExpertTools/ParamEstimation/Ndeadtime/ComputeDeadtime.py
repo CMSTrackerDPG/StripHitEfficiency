@@ -1,6 +1,16 @@
 import sys
-from ROOT import *
+from ROOT import TFile, TH1F, TCanvas, TMath, TLegend, ROOT
+import ROOT as R
 import ctypes
+
+###
+# Code that compute deadtime due to HIP based on
+# the coefficient of efficiency variation with pile-up,
+# the HIP probability per collision
+# and the average pile-up in the data used
+# coeff = p_HIP x Nbx_dead_time
+# The coefficient (slope) has been measured in an other code
+###
 
 
 ### Read arguments
@@ -10,6 +20,9 @@ if len(sys.argv)<2:
   exit()
 
 filename=str(sys.argv[1])
+run = 'fill'
+run += filename.split('/')[-1].split('_fill')[-1].replace('.root','')
+directory = filename.replace(filename.split('/')[-1], '')
 
 avg_pu = 0
 # get average PU. If not set from argument, will be read from histogram
@@ -24,7 +37,8 @@ d = f.Get('SiStripHitEff')
 c = TCanvas()
 
 # PU
-h_PU = d.Get('PU_cutOnTracks') # less biased distribution (not there in old code versions)
+#h_PU = d.Get('PU_cutOnTracks') # less biased distribution (not there in old code versions)
+h_PU = d.Get('layertotal_vsPU_layer_1') # Give still different PU and better matching
 if not h_PU:
     h_PU = d.Get('PU')
 if avg_pu==0:
@@ -32,7 +46,7 @@ if avg_pu==0:
 print('PU:', avg_pu)
 
 #--- opening HIP probability per pile-up (Marketa's plot)
-ifileHIPprob = TFile('../../PredictionsModel/inputs/HIPProbPerPU.root')
+ifileHIPprob = TFile("../../inputs/archive/HIPProbPerPU.root")
 if not ifileHIPprob:
   print('PUfit.root file not found')
   exit()
@@ -43,12 +57,13 @@ if not h_hipprob:
   exit()
   
 #--- opening low pile-up offset
-ifileOffset = TFile('PUfit.root')
+ifileOffset = TFile(directory+'/PUfit_'+run+'.root')
+print('Opening file', ifileOffset)
 if not ifileOffset:
-  print('PUfit.root file not found')
+  print(ifileOffset, ' file not found')
   exit()
-h_Offset = ifileOffset.Get('Offset')
-h_Slope = ifileOffset.Get('Slope')
+h_Offset = ifileOffset.Get('origin')
+h_Slope = ifileOffset.Get('slope')
 if not h_Offset or not h_Slope:
   print('PU Offset or Slope histogram not found')
   exit()
@@ -65,15 +80,18 @@ print('n layers:', nbins)
 h_Ineff_meas = TH1F('h_Ineff_meas', '', nbins, 0, nbins)
 h_Ineff_fit = TH1F('h_Ineff_fit', '', nbins, 0, nbins)
 h_Deadtime = TH1F('h_Deadtime', '', nbins, 0, nbins)
-x = ctypes.c_double(0.0)
-y = ctypes.c_double(0.0)
+#x = ctypes.c_double(0.0)
+#y = ctypes.c_double(0.0)
+x = R.double(0.)
+y = R.double(0.)
 output_file = open('Ndeadtime.txt','w')
 print('Results will be written in Ndeadtime.txt')
 
 
 ### Loop over layers
 
-print('SUDDET LAYER INEFF HIPPROB DEADTIME')
+y_values = g.GetY()
+print('SUDDET LAYER OFFSET EFF INEFF HIPPROB DEADTIME')
 for i in range(1,nbins+1):
 
     offset = h_Offset.GetBinContent(i)
@@ -87,6 +105,13 @@ for i in range(1,nbins+1):
     if label_hip != label :
         print('WARNING: inconsistency between layers for offset and HIP proba')
         print(label, '-', label_hip)
+        # ordering of layers can be different in endcaps
+        for x in range(0,h_hipprob.GetNbinsX()+1):
+            label_hip = h_hipprob.GetXaxis().GetBinLabel(x)
+            if label_hip == label:
+                HIPprob = h_hipprob.GetBinContent(x)
+                HIPprob_err = h_hipprob.GetBinError(x)
+                print('  Solved. Found layer', label_hip)
     
     # Inefficiency computation from PU dependance (without offset)
     ineff_fit = -1.*slope*0.001*avg_pu
@@ -96,17 +121,18 @@ for i in range(1,nbins+1):
     h_Ineff_fit.GetXaxis().SetBinLabel(i, label)
     
     # Comparison with global efficiency
-    g.GetPoint(i-1,x,y)
-    ineff_meas = offset-y.value
+    #g.GetPoint(i-1,ctypes.c_double(x), ctypes.c_double(y))
+    y = y_values[i-1]
+    ineff_meas = offset-y
     h_Ineff_meas.SetBinContent(i, ineff_meas)
-    h_Ineff_meas.SetBinError(i, sqrt(offset_err*offset_err + g.GetErrorYlow(i-1)*g.GetErrorYlow(i-1)))
+    h_Ineff_meas.SetBinError(i, TMath.Sqrt(offset_err*offset_err + g.GetErrorYlow(i-1)*g.GetErrorYlow(i-1)))
     
     # Computation of deadtime
     if HIPprob!=0 and ineff_fit!=0:
         deadtime = -1*slope*0.001/HIPprob/1e-5 # Guillaume's method
-        deadtime_err = sqrt(slope_err*slope_err/slope/slope + HIPprob_err*HIPprob_err/HIPprob/HIPprob)*deadtime
-        print(label, ineff_fit, HIPprob, deadtime)
-        output_file.write(label+'\t'+str(deadtime)+'\t'+str(deadtime_err)+'\n')
+        deadtime_err = TMath.Sqrt(slope_err*slope_err/slope/slope + HIPprob_err*HIPprob_err/HIPprob/HIPprob)*deadtime
+        print(label, offset, y, ineff_fit, HIPprob, deadtime)
+        output_file.write(label+'\t{:.2f}\t{:.2f}\n'.format(deadtime, deadtime_err))
         h_Deadtime.SetBinContent(i, deadtime)
         h_Deadtime.SetBinError(i, deadtime_err)
         h_Deadtime.GetXaxis().SetBinLabel(i, label)

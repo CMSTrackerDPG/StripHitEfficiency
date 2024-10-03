@@ -60,6 +60,12 @@ def get_layer_name(layer, nLayers):
       if layer>=26 and layer<35: return 'TEC D'+str(layer-23)
   return ''
 
+def get_layer_name_from_label(list_layer, layer):
+  if layer < len(list_layer):
+    return list_layer[layer]
+  else:
+    return ''
+
 
 ################################################################################
   
@@ -113,8 +119,6 @@ if gmeas == None:
     print('  Missing graph in file '+frun.GetName())
     exit()
 
-print('N layers:', nLayers)
-
 tlist = gmeas.GetXaxis().GetLabels()
 list_label=[]
 if tlist == None:
@@ -127,29 +131,34 @@ else:
     print('Available layers:')
     print(list_label)
 
-if nLayers==22 or nLayers==34:
-    print('\nWarning:', nLayers, 'layers found. Prediction computation is only valid per ring for the end-caps and not per disk. Using only barrel layers.' )
-    nLayers=10
-    # Copying the usable layers
-    gmeas_cl = TGraphAsymmErrors(nLayers)
-    for i in range(1,nLayers+1):
-        y = gmeas.GetPointY(i-1)
-        eh = gmeas.GetErrorYhigh(i-1)
-        el = gmeas.GetErrorYlow(i-1)
-        gmeas_cl.SetPoint(i-1, i-0.5, y)
-        gmeas_cl.SetPointEYhigh(i-1,eh)
-        gmeas_cl.SetPointEYlow(i-1,el)
-    gmeas_cl.GetXaxis().SetLimits(0, nLayers)
-    gmeas_cl.SetMarkerColor(2)
-    gmeas_cl.SetMarkerSize(1.2)
-    gmeas_cl.SetLineColor(2)
-    gmeas_cl.SetLineWidth(4)
-    gmeas_cl.SetMarkerStyle(20)
-    gmeas_cl.SetMinimum(gmeas.GetMinimum())
-    gmeas_cl.SetMaximum(gmeas.GetMaximum())
-    gmeas_cl.SetTitle(gmeas.GetTitle())
-else:
-    gmeas_cl = gmeas.Clone()
+nLayers = len(list_label)
+print('N layers:', nLayers)
+
+
+#if nLayers==22 or nLayers==34:
+#    print('\nWarning:', nLayers, 'layers found. Prediction computation is only valid per ring for the end-caps and not per disk. Using only barrel layers.' )
+#    nLayers=10
+#    # Copying the usable layers
+#    gmeas_cl = TGraphAsymmErrors(nLayers)
+#    for i in range(1,nLayers+1):
+#        y = gmeas.GetPointY(i-1)
+#        eh = gmeas.GetErrorYhigh(i-1)
+#        el = gmeas.GetErrorYlow(i-1)
+#        gmeas_cl.SetPoint(i-1, i-0.5, y)
+#        gmeas_cl.SetPointEYhigh(i-1,eh)
+#        gmeas_cl.SetPointEYlow(i-1,el)
+#    gmeas_cl.GetXaxis().SetLimits(0, nLayers)
+#    gmeas_cl.SetMarkerColor(2)
+#    gmeas_cl.SetMarkerSize(1.2)
+#    gmeas_cl.SetLineColor(2)
+#    gmeas_cl.SetLineWidth(4)
+#    gmeas_cl.SetMarkerStyle(20)
+#    gmeas_cl.SetMinimum(gmeas.GetMinimum())
+#    gmeas_cl.SetMaximum(gmeas.GetMaximum())
+#    gmeas_cl.SetTitle(gmeas.GetTitle())
+#else:
+#    gmeas_cl = gmeas.Clone()
+gmeas_cl = gmeas.Clone()
 print('Using', nLayers, 'layers.')
 
 
@@ -172,6 +181,7 @@ if not os.path.isdir(filldir):
     os.system('mkdir '+filldir)
 fillTxt_str = filldir+'fill_'+str(fill)+'.txt'
 fillJson_str = filldir+'fill_'+str(fill)+'.json'
+fillAllbxJson_str = filldir+'fill_'+str(fill)+'_allbx.json'
 if not os.path.isfile(fillJson_str):
     if not os.path.isfile(fillTxt_str):
         print('Requesting beam filling scheme from OMS')
@@ -179,8 +189,10 @@ if not os.path.isfile(fillJson_str):
     print('Producing file:', fillJson_str)
     command_str1 = 'python3 ../PredictionsModel/python/MakeJson.py '+fillTxt_str
     command_str2 = 'mv fill.json '+fillJson_str
+    command_str3 = 'mv fill_allbx.json '+fillAllbxJson_str
     os.system(command_str1)
     os.system(command_str2)
+    os.system(command_str3)
 else:
     print('File', fillJson_str, 'exists')
 os.system('cp '+fillJson_str+' fill.json')
@@ -209,9 +221,13 @@ for ilay in range(1, nLayers+1):
     pu_histo = fdir.Get("layertotal_vsPU_layer_"+str(ilay)) # one entry per expected hits vs PU
     if pu_histo:
         pred.set_pileup_histo(pu_histo)
-    layer = get_layer_name(ilay,nLayers)
+        #pred.set_pileup(pu_histo.GetMean()) # JLA
+    #layer = get_layer_name(ilay,nLayers)
+    layer = get_layer_name_from_label(list_label, ilay-1)
     pred.read_deadtime("../PredictionsModel/inputs/Ndeadtime.txt",layer)
-    expected = pred.compute_avg_eff_layer(layer)
+    # check fill scheme
+    #expected = pred.compute_avg_eff_layer(layer)
+    expected = pred.compute_avg_eff_layer_factorized(layer)
     error = np.sqrt(pred.compute_error_avg_eff_layer(layer))
     print('Layer',ilay,layer,': {:.4}'.format(expected),'+/-','{:.3}'.format(error))
     gpred.SetPoint(ilay-1, ilay-0.5, expected) 
@@ -235,7 +251,7 @@ gmeas_cl.SetMinimum(0.98)
 h_axis = TH1F('axis', '', nLayers, 0, nLayers+0.5)
 for i in range(1,nLayers+1):
     h_axis.SetBinContent(i,0.99+i*0.001)
-    h_axis.GetXaxis().SetBinLabel(i, list_label[i-1])
+    if i < len(list_label): h_axis.GetXaxis().SetBinLabel(i, list_label[i-1])
 ymin = gmeas_cl.GetMinimum()
 ymax = gmeas_cl.GetMaximum()
 h_axis.SetStats(0)
@@ -292,9 +308,7 @@ for i in range (1,nLayers+1):
     e1sq = e1*e1
     e2sq = e2*e2
     errsq = (e1sq*b2sq+e2sq*b1sq)
-    if b1==0:
-        break
-    if b2>0:
+    if b1>0 and b2>0:
         gmeas2.SetPoint(i-1,i-0.5,b1/b2)
         gmeas2.SetPointError(i-1,0,0,np.sqrt(errsq),np.sqrt(errsq))
     else:

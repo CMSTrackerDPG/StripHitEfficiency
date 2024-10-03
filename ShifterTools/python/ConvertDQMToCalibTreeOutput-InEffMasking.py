@@ -328,7 +328,7 @@ def ComputeEfficiency(hfound, htotal, scale=1.):
             found = hfound.GetBinContent(ibx)
             total = htotal.GetBinContent(ibx)
             eff = found / float(total)
-            geff.SetPoint(ipt, ibx, eff*scale)
+            geff.SetPoint(ipt, hfound.GetBinCenter(ibx), eff*scale)
             low = TEfficiency.Bayesian(total, found, .683, 1, 1, False)
             up = TEfficiency.Bayesian(total, found, .683, 1, 1, True)
             geff.SetPointError(ipt, 0, 0, abs(eff - low), abs(up - eff))
@@ -421,8 +421,10 @@ print('nLayersInDQM', nLayersInDQM)
 
 ## Get tree
 dqm_filename=dqm_file.split('/')[-1]
+print(dqm_file)
 dqm_dir=dqm_file.replace(dqm_filename, '')
 tree_file = dqm_dir+'GraphAndTree_run'+run+'.root'
+print(tree_file)
 if not os.path.isfile(tree_file):
     print('File', tree_file, 'does not exist')
     exit()

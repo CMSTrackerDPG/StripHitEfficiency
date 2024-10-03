@@ -61,13 +61,13 @@ def GetLabels( nlayers ):
     # 30 -> rings & sides
     # 22 -> wheels
     # 20 -> rings
-    if nLayers==34:
+    if nlayers==34:
         return ['TIB L1', 'TIB L2', 'TIB L3', 'TIB L4', 'TOB L1', 'TOB L2', 'TOB L3', 'TOB L4', 'TOB L5', 'TOB L6', 'TID- D1', 'TID- D2', 'TID- D3', 'TID+ D1', 'TID+ D2', 'TID+ D3', 'TEC- D1', 'TEC- D2', 'TEC- D3', 'TEC- D4', 'TEC- D5', 'TEC- D6', 'TEC- D7', 'TEC- D8', 'TEC- D9', 'TEC+ D1', 'TEC+ D2', 'TEC+ D3', 'TEC+ D4', 'TEC+ D5', 'TEC+ D6', 'TEC+ D7', 'TEC+ D8', 'TEC+ D9']
-    if nLayers==30:
+    if nlayers==30:
         return ['TIB L1', 'TIB L2', 'TIB L3', 'TIB L4', 'TOB L1', 'TOB L2', 'TOB L3', 'TOB L4', 'TOB L5', 'TOB L6', 'TID- R1', 'TID- R2', 'TID- R3', 'TID+ R1', 'TID+ R2', 'TID+ R3', 'TEC- R1', 'TEC- R2', 'TEC- R3', 'TEC- R4', 'TEC- R5', 'TEC- R6', 'TEC- R7', 'TEC+ R1', 'TEC+ R2', 'TEC+ R3', 'TEC+ R4', 'TEC+ R5', 'TEC+ R6', 'TEC+ R7']
-    if nLayers==22:
+    if nlayers==22:
         return ['TIB L1', 'TIB L2', 'TIB L3', 'TIB L4', 'TOB L1', 'TOB L2', 'TOB L3', 'TOB L4', 'TOB L5', 'TOB L6', 'TID D1', 'TID D2', 'TID D3', 'TEC D1', 'TEC D2', 'TEC D3', 'TEC D4', 'TEC D5', 'TEC D6', 'TEC D7', 'TEC D8', 'TEC D9']
-    if nLayers==20:
+    if nlayers==20:
         return ['TIB L1', 'TIB L2', 'TIB L3', 'TIB L4', 'TOB L1', 'TOB L2', 'TOB L3', 'TOB L4', 'TOB L5', 'TOB L6', 'TID R1', 'TID R2', 'TID R3', 'TEC R1', 'TEC R2', 'TEC R3', 'TEC R4', 'TEC R5', 'TEC R6', 'TEC R7']
     return []
 
@@ -233,6 +233,7 @@ for obj in fdir.GetListOfKeys():
         eff_histos.append(CloneHisto(fdir, name))
         neffLayers+=1
 print(neffLayers, 'Layers found for modules efficiencies')
+eff_labels = GetLabels(neffLayers)
 
 
 ## EventInfo
@@ -272,14 +273,14 @@ for i in range(1, neffLayers):
     vsBx_total_histos.append(CloneNHitsHisto(fdir, 'VsBx/totalVsBx_layer'+str(i), False))
     geff_vsBx.append( TGraphAsymmErrors() )
     geff_vsBx[i-1].SetName('effVsBx_layer'+str(i))
-    geff_vsBx[i-1].SetTitle('Hit Efficiency vs bx - '+str(labels[i-1]))
+    geff_vsBx[i-1].SetTitle('Hit Efficiency vs bx - '+str(eff_labels[i-1]))
     geff_vsBx[i-1].BayesDivide(vsBx_found_histos[i-1], vsBx_total_histos[i-1])
     geff_vsBx[i-1].SetMarkerStyle(20)
     
     ## Avg over trains
     geff_avg_vsBx.append( ComputeEfficiencyPerTrain(vsBx_found_histos[i-1], vsBx_total_histos[i-1]) )
     geff_avg_vsBx[i-1].SetName('effVsBxAvg_layer'+str(i))
-    geff_avg_vsBx[i-1].SetTitle('Hit Efficiency vs bx - '+str(labels[i-1]))
+    geff_avg_vsBx[i-1].SetTitle('Hit Efficiency vs bx - '+str(eff_labels[i-1]))
 
 
 ## VsPU
@@ -291,7 +292,7 @@ for i in range(1, neffLayers):
     vsPU_total_histos.append(CloneNHitsHisto(fdir, 'VsPu/layertotal_vsPU_layer_'+str(i), False))
     geff_vsPU.append( TGraphAsymmErrors() )
     geff_vsPU[i-1].SetName('effVsPU_layer'+str(i))
-    geff_vsPU[i-1].SetTitle('Hit Efficiency vs bx - '+str(labels[i-1]))
+    geff_vsPU[i-1].SetTitle('Hit Efficiency vs bx - '+str(eff_labels[i-1]))
     geff_vsPU[i-1].BayesDivide(vsPU_found_histos[i-1], vsPU_total_histos[i-1])
     geff_vsPU[i-1].SetMarkerStyle(20)
 
@@ -305,7 +306,7 @@ for i in range(1, neffLayers):
     vsLumi_total_histos.append(CloneNHitsHisto(fdir, 'VsLumi/layertotal_vsLumi_layer_'+str(i), False))
     geff_vsLumi.append( TGraphAsymmErrors() )
     geff_vsLumi[i-1].SetName('effVsLumi_layer'+str(i))
-    geff_vsLumi[i-1].SetTitle('Hit Efficiency vs bx - '+str(labels[i-1]))
+    geff_vsLumi[i-1].SetTitle('Hit Efficiency vs bx - '+str(eff_labels[i-1]))
     geff_vsLumi[i-1].BayesDivide(vsLumi_found_histos[i-1], vsLumi_total_histos[i-1])
     geff_vsLumi[i-1].SetMarkerStyle(20)
 
