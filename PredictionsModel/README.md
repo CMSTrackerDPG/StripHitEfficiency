@@ -8,8 +8,12 @@ The model is defined in the class **EfficiencyCalculator**.
 
 ## Fills
 OMS is used to get fill number and beam filling scheme with scripts in the *python* directory. To use them the OMS api has to be installed with the following commands:
+
 `git clone https://gitlab.cern.ch/cmsoms/oms-api-client.git  (cern login)`
+
 `cd oms-api-client`
+
 `python3 -m pip install -r requirements.txt`
+
 `python3 setup.py install --user`
 
