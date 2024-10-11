@@ -235,22 +235,22 @@ MakeShifterSummary ()
   fi
 
   cat >> index_new.html  << EOF
-<TR> <TD align=center> <a href="../standard/Plots/SiStripHitEffTKMapBad.png"><img src="../${DIR}standard/Plots/SiStripHitEffTKMapBad.png"hspace=5 vspace=5 border=0 style="width: 90%" ALT="SiStripHitEffTKMapBad.png"></a> 
+<TR> <TD align=center> <a href="../${DIR}standard/Plots/SiStripHitEffTKMapBad.png"><img src="../${DIR}standard/Plots/SiStripHitEffTKMapBad.png"hspace=5 vspace=5 border=0 style="width: 90%" ALT="SiStripHitEffTKMapBad.png"></a> 
   <br> Inefficient modules masked in the other plots</TD>
 EOF
 
   cat >> index_new.html  << EOF
-  <TD align=center> <a href="../withMasking/Plots/SiStripHitEffTKMap.png"><img src="../${DIR}withMasking/Plots/SiStripHitEffTKMap.png"hspace=5 vspace=5 border=0 style="width: 90%" ALT="SiStripHitEffTKMap.png"></a> 
+  <TD align=center> <a href="../${DIR}withMasking/Plots/SiStripHitEffTKMap.png"><img src="../${DIR}withMasking/Plots/SiStripHitEffTKMap.png"hspace=5 vspace=5 border=0 style="width: 90%" ALT="SiStripHitEffTKMap.png"></a> 
   <br> Remaining inefficient modules </TD> </TR> 
 EOF
             
   cat >> index_new.html  << EOF
-<TR> <TD align=center> <a href="../withMasking/Plots/SiStripHitEffTKMapEff.png"><img src="../${DIR}withMasking/Plots/SiStripHitEffTKMapEff.png"hspace=5 vspace=5 border=0 style="width: 90%" ALT="SiStripHitEffTKMapEff.png"></a> 
+<TR> <TD align=center> <a href="../${DIR}withMasking/Plots/SiStripHitEffTKMapEff.png"><img src="../${DIR}withMasking/Plots/SiStripHitEffTKMapEff.png"hspace=5 vspace=5 border=0 style="width: 90%" ALT="SiStripHitEffTKMapEff.png"></a> 
   <br> Efficiency map </TD>
 EOF
             
   cat >> index_new.html  << EOF
-  <TD align=center> <a href="../withMasking/Plots/Summary.png"><img src="../${DIR}withMasking/Plots/Summary.png"hspace=5 vspace=5 border=0 style="width: 90%" ALT="Summary.png"></a> 
+  <TD align=center> <a href="../${DIR}withMasking/Plots/Summary.png"><img src="../${DIR}withMasking/Plots/Summary.png"hspace=5 vspace=5 border=0 style="width: 90%" ALT="Summary.png"></a> 
   <br> Efficiency per layer </TD> </TR> 
 EOF
 
