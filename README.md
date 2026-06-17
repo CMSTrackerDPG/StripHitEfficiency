@@ -1,6 +1,10 @@
 # StripHitEfficiency
 Tools for shifters and experts for producing hit efficiency results.
 
+## Setup on vocms
+
+Instructions to setup on TkDQM vocms machines: [https://tkdqm.docs.cern.ch/SetupStripEff/](https://tkdqm.docs.cern.ch/SetupStripEff/)
+
 ## ShifterTools
 
 Directory with the tools for the hit efficiency monitoring to be used by tracker shift leaders.

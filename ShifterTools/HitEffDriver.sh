@@ -296,7 +296,7 @@ PU_CLEANING=true # REMOVE files with large PU variations. Important due to bias 
 
 # Default values for other options
 # Run period
-ERA="GR24"
+ERA="GR26"
 # nb of files to be processed for the run
 NFILES="100" # Can be "all" in the DQM workflow
 

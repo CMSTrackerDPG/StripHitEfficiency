@@ -1,0 +1,7 @@
+PredictionsModel/__pycache__/
+ShifterTools/*.root
+ShifterTools/fills/
+ShifterTools/python/__pycache__/
+ShifterTools/*.log
+ShifterTools/*.txt
+ShifterTools/*.py
