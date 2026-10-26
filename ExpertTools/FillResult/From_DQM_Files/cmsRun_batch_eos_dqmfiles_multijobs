@@ -1,0 +1,70 @@
+#!/bin/bash
+
+
+# $1 : CMSSW version
+if [ "$1" = "" ] 
+then
+    echo " Need a CMSSW version. exit."
+    echo " Syntax : cmsRun_batch_eos CMSSWDIR configfile.cfg (INPUTFILE)"
+    exit
+fi
+
+# CMSSW directory
+CMSSWDIR=$1
+
+#starting directory
+echo "You are working here : "
+pwd
+echo "Your CMSSW directory is :"
+echo $CMSSWDIR
+echo
+
+cd $CMSSWDIR
+eval `scramv1 runtime -sh`
+cd -
+
+# $2 : config file
+if [ "$2" != "" ] 
+  then
+    echo "cp $2 ."
+    cp $2 .
+  else
+    echo " Need a configuration file. exit."
+    echo " Syntax : cmsRun_batch_eos CMSSWDIR configfile.cfg (INPUTFILE)(NOFJOBS)(NOFFILESPERJOB)"
+    exit
+fi
+configfile=`echo $2 | awk -F/ '{print $NF}' | awk -F. '{print $1}'`
+
+cat ${configfile}.py > ${configfile}_temp.py
+
+
+# $3 : job number 
+JOBNUMBER=1
+if [ "$3" != "" ] ; then
+    JOBNUMBER=$3
+fi
+
+# $4 : number of files per job
+NOFFILESPERJOB=1
+if [ "$4" != "" ] ; then
+    NOFFILESPERJOB=$4
+fi
+
+
+echo "cmsRun ${configfile}_temp.py JobNumber=$JOBNUMBER NofFilesPerJob=$NOFFILESPERJOB"
+cmsRun ${configfile}_temp.py JobNumber=$JOBNUMBER NofFilesPerJob=$NOFFILESPERJOB
+
+for ROOTFILE in `ls *.root`
+do
+  ROOTFILE_BASENAME=`echo $ROOTFILE | sed -e 's/.root//'`
+  mv $ROOTFILE ${ROOTFILE_BASENAME}_${JOBNUMBER}.root
+done
+
+
+echo
+ls -lhrt
+echo
+
+echo ""
+
+exit

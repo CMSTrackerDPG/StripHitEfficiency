@@ -1,0 +1,55 @@
+#!/bin/bash
+
+
+# $1 : CMSSW version
+if [ "$1" = "" ] 
+then
+    echo " Need a CMSSW version. exit."
+    echo " Syntax : cmsRun_batch_eos CMSSWDIR configfile.cfg (INPUTFILE)"
+    exit
+fi
+
+# CMSSW directory
+CMSSWDIR=$1
+
+#starting directory
+echo "You are working here : "
+pwd
+echo "Your CMSSW directory is :"
+echo $CMSSWDIR
+echo
+
+cd $CMSSWDIR
+eval `scramv1 runtime -sh`
+cd -
+
+# $2 : config file
+if [ "$2" != "" ] 
+  then
+    echo "cp $2 ."
+    cp $2 .
+  else
+    echo " Need a configuration file. exit."
+    echo " Syntax : cmsRun_batch_eos CMSSWDIR configfile.cfg (INPUTFILE)(NOFJOBS)(NOFFILESPERJOB)"
+    exit
+fi
+configfile=`echo $2 | awk -F/ '{print $NF}' | awk -F. '{print $1}'`
+
+cat ${configfile}.py > ${configfile}_temp.py
+
+# copy input file
+if [ "$3" != "" ] ; then
+    echo "cp $CMSSWDIR/$3 ."
+    cp $CMSSWDIR/$3 .
+fi
+
+echo "cmsRun ${configfile}_temp.py "
+cmsRun ${configfile}_temp.py
+
+echo
+ls -lhrt
+echo
+
+echo ""
+
+exit

@@ -9,8 +9,10 @@ fi
 FILLNUMBER=$1
 
 # Get list of runs and fill runlist.txt
-python3 getRunsInFill.py $FILLNUMBER | grep -v ">>" > runlist.txt
-
+# sending a query to the RunRegistry
+#python3 getRunsInFill.py $FILLNUMBER | grep -v ">>" > runlist.txt
+# alternative command for reading a text file exported from the RunRegistry
+../getRunsInFill_FromFile.sh $FILLNUMBER ../data/runs_database.txt | grep -v ">>" > runlist.txt
 
 while read RUN DATASET_TYPE DATASET FILL PIX STRIP TRACK TRIGGERS
 do

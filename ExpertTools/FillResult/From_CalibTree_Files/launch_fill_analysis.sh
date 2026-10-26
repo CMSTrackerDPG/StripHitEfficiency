@@ -16,8 +16,9 @@ CODEDIR=`pwd`
 # Get list of good runs and corresponding files
 
 # Get list of runs and fill runlist.txt
-python3 getRunsInFill.py $FILLNUMBER | grep -v ">>" > runlist.txt
-
+#python3 ../getRunsInFill.py $FILLNUMBER | grep -v ">>" > runlist.txt
+# alternative command for reading a text file exported from the RunRegistry
+../getRunsInFill_FromFile.sh $FILLNUMBER ../data/runs_database.txt | grep -v ">>" > runlist.txt
 
 SHORTFILELIST=""
 FILELIST=""

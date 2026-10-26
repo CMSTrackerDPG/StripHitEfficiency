@@ -1,0 +1,10 @@
+executable            = $(codedir)/cmsRun_batch_eos_dqmfiles_multijobs
+arguments             = $(cmsswdir) $(workdir)/stepHarvest_ALCAHARVEST_fill.py $(ProcId) $(nfilesperjob)
+transfer_input_files  =  filelist.txt
+
+output                = $(workdir)/jobs_output/output.$(ClusterId).$(ProcId).out
+error                 = $(workdir)/jobs_output/error.$(ClusterId).$(ProcId).err
+log                   = $(workdir)/jobs_output/log.$(ClusterId).log
+
++JobFlavour = "microcentury"
+queue $(njobs)

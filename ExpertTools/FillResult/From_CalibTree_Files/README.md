@@ -1,0 +1,52 @@
+# Tools and recipe to produce results for a fill from CalibTree files:
+
+## Check the number of calibTree files available for the fill (optional)
+
+`./list_fill_files.sh FILLNUMBER`
+
+It prints the list of the files of the good runs for the fill in a format that can be included in the cfg file.
+It uses `list_run_files.sh`.
+
+
+## Produce the results (in interactive mode) when there are few files
+
+`./launch_fill_analysis.sh FILLNUMBER`
+
+It launches a first cmsRun job on 2 calibTree files per run to produce a list of inefficient modules.
+Then it launches intereactively a second cmsRun job on all the files to produce the results. The results are stored localy in a directory *Fill_FILLNUMBER*.
+It uses the `SiStripHitEff_fill_template.py` configuration file.
+
+## Produce the results using HTCondor (when more than 10 files to run on)
+
+`./launch_fill_analysis_batch.sh FILLNUMBER`
+
+It launches a first cmsRun job on 2 calibTree files per run to produce a list of inefficient modules.
+The second pass job is splitted in jobs sent to HTCondor (each job runs on 10 files, by default).
+It uses the `job.sub` file and the `cmsRun_batch_eos` script for the jobs on HTCondor and results are stored in the directory *Fill_FILLNUMBER_temp*.
+ 
+## Check the status of the job sent to HTCondor
+
+`./check_jobs_results.sh RESULTS_DIRECTORY`
+
+It checks the logs of the jobs.
+If all jobs have correctly finished, the output files are merged in a file named *SiStripHitEffHistos_merged.root* .
+Otherwise you need to send again the failed jobs from the work directory.
+It prints also the remaining inefficient modules. It is good to check that no more are remaining. It can happen because not all the files are used to identify them in the first pass.
+
+## Clean the merged file and recompute the efficiencies
+
+`python3 RecomputeEfficiencies.py INPUTFILE`
+
+Only the histograms are correctly merged in the previous step using the ROOT hadd command. This script recomputes correctly the efficiencies from the histograms and save the TGraphs. The output file is named *SiStripHitEffHistos_fill_merged.root* .
+
+
+### What to do in case of remaining inefficient modules
+
+When running the *check_jobs_results.sh* script, the number of remaining inefficient modules in each job is printed.
+It is possible to add them to the list of modules to be masked *BadModules_input.txt* with the following command:
+`./merge_bad_modules_lists.sh RESULTS_DIRECTORY`
+If there is a file *BadModules_input.txt* in the directory, it will be used as a baseline.
+The new *BadModules_input.txt* is written in the local directory and can be used to produce new results.
+
+When *BadModules_input.txt* is provided (is in the local directory) it can directly be used with the script:
+`./launch_fill_analysis_batch_manual_masking.sh FILLNUMBER`

@@ -11,7 +11,10 @@ echo analyzing fill $FILLNUMBER
 
 
 # Get list of runs and fill runlist.txt
-python3 getRunsInFill.py $FILLNUMBER | grep -v ">>" > runlist.txt
+# sending a query to the RunRegistry
+#python3 getRunsInFill.py $FILLNUMBER | grep -v ">>" > runlist.txt
+# alternative command for reading a text file exported for the RunRegistry
+./getRunsInFill_FromFile.sh $FILLNUMBER | grep -v ">>" > runlist.txt
 
 
 # Print infos and select good runs

@@ -391,9 +391,13 @@ def ComputeEfficiencyPerTrain(hfound, htotal, scale=1.):
 #------------------------------------------------------------------
 #------------------------------------------------------------------
 
+# Compute Layer efficiencies from the output files in masking the tagged inefficient modules
+# It is possible to give a list of additional modules to mask with a txt file
+
 
 if len(sys.argv)<2:
     print('Missing file name argument')
+    print('Syntax: ConvertDQMToCalibTreeOutput-InEffMasking.py inputfile [detids_file]')
     exit()
 
 dqm_file = sys.argv[1]
@@ -401,6 +405,21 @@ dqm_file = sys.argv[1]
 if not os.path.isfile(dqm_file):
     print('File', dqm_file, 'does not exist')
     exit()
+
+bad_detids_file = ''
+bad_detids_list = []
+if len(sys.argv)>2:
+    bad_detids_file =  sys.argv[2]
+    if not os.path.isfile(bad_detids_file):
+        print('File', bad_detids_file, 'does not exist')
+        exit()
+    fbad = open(bad_detids_file,'r')
+    lines = fbad.readlines()
+    for x in lines:
+        bad_detids_list.append(int(x.split(' ')[0].replace('\n','')))
+    fbad.close()
+    print('Read', len(bad_detids_list), 'bad modules from file', bad_detids_file, '. They will be masked.')
+#print(bad_detids_list)
 
 run=''
 words = dqm_file.split('_')
@@ -458,11 +477,13 @@ modEff_file = open('ModulesEfficiencies.txt', 'w')
 modIneff_file = open('ModulesInefficiencies.txt', 'w')
 layEff_file = open('EfficiencyResults_'+run+'.txt', 'w')
 
+
 for mod in tree:
     ilayer = GetILayer(mod.DetId, nLayersInDQM)
     #print(mod.Layer, mod.DetId, mod.FoundHits, mod.AllHits, ilayer)
     if ilayer < nLayersInDQM:
-        if mod.IsTaggedIneff:
+        if mod.IsTaggedIneff or mod.DetId in bad_detids_list:
+            #print(ilayer, mod.DetId, mod.IsTaggedIneff)
             found_wIneff[ilayer] += mod.FoundHits
             total_wIneff[ilayer] += mod.AllHits
         else:
